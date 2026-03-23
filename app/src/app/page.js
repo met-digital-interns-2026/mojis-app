@@ -1,65 +1,389 @@
-import Image from "next/image";
+// Homepage — the main page visitors see at "/"
+// "use client" because we use useState and useEffect for interactivity.
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import BottomNav from "./components/BottomNav";
+import CommentsSection from "./components/CommentsSection";
+import { CATEGORIES, TRENDING } from "./data/artworks";
+
+export default function HomePage() {
+  const [loaded, setLoaded] = useState(false);
+  const [expandedCard, setExpandedCard] = useState(null);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
+
+  useEffect(() => {
+    setLoaded(true);
+    const handleScroll = (e) => {
+      setHeaderScrolled(e.target.scrollTop > 40);
+    };
+    const el = document.querySelector(".app-scroll");
+    if (el) el.addEventListener("scroll", handleScroll);
+    return () => el?.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{
+      width: "100%",
+      maxWidth: 420,
+      margin: "0 auto",
+      height: "100vh",
+      background: "#F7F5F0",
+      position: "relative",
+      overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+    }}>
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        .category-card {
+          transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+        }
+        .category-card:active { transform: scale(0.97); }
+        .artwork-img { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .category-card:hover .artwork-img { transform: scale(1.05); }
+        .emoji-pill { transition: all 0.2s ease; }
+        .emoji-pill:hover { transform: scale(1.1); }
+        .trending-item { transition: all 0.2s ease; cursor: pointer; }
+        .trending-item:active { transform: scale(0.98); background: rgba(0,0,0,0.04); }
+        .app-scroll { overflow-y: auto; flex: 1; }
+        .app-scroll::-webkit-scrollbar { display: none; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{
+        padding: "16px 20px 8px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        flexShrink: 0,
+        transition: "all 0.3s ease",
+        borderBottom: headerScrolled ? "1px solid rgba(0,0,0,0.06)" : "1px solid transparent",
+        background: headerScrolled ? "rgba(247,245,240,0.95)" : "transparent",
+        backdropFilter: headerScrolled ? "blur(10px)" : "none",
+        zIndex: 10,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: "linear-gradient(135deg, #2D2A26 0%, #5C574E 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+          }}>
+            🏛️
+          </div>
+          <div>
+            <div style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 20,
+              fontWeight: 700,
+              color: "#2D2A26",
+              lineHeight: 1.1,
+            }}>
+              Moji Museum
+            </div>
+            <div style={{ fontSize: 11, color: "#8C8580", fontWeight: 400, letterSpacing: "0.02em" }}>
+              The Met — 847 visitors reacting now
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div style={{
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          background: "#EDEAE4",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 18,
+          cursor: "pointer",
+        }}>
+          👤
         </div>
-      </main>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="app-scroll" style={{ padding: "0 0 100px" }}>
+
+        {/* Trending Now Banner */}
+        <div style={{
+          margin: "16px 18px 0",
+          padding: "14px 16px",
+          background: "linear-gradient(135deg, #2D2A26 0%, #4A453D 100%)",
+          borderRadius: 16,
+          opacity: loaded ? 1 : 0,
+          animation: loaded ? "fadeUp 0.5s ease forwards" : "none",
+        }}>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 10,
+          }}>
+            <span style={{ fontSize: 14, animation: "pulse 2s ease infinite" }}>🔴</span>
+            <span style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#F7F5F0",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}>
+              Trending Now
+            </span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {TRENDING.map((item, i) => (
+              <div key={i} className="trending-item" style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "6px 8px",
+                borderRadius: 10,
+              }}>
+                <span style={{ fontSize: 20 }}>{item.emoji}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#F7F5F0",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}>
+                    {item.title}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#A09B94" }}>{item.artist}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#F7F5F0" }}>+{item.count}</div>
+                  <div style={{ fontSize: 10, color: "#A09B94" }}>{item.time}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Categories Header */}
+        <div style={{
+          padding: "24px 20px 12px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          opacity: loaded ? 1 : 0,
+          animation: loaded ? "fadeUp 0.5s ease 0.2s forwards" : "none",
+          animationFillMode: "backwards",
+        }}>
+          <div>
+            <h2 style={{
+              fontFamily: "'Playfair Display', serif",
+              fontSize: 24,
+              fontWeight: 700,
+              color: "#2D2A26",
+              letterSpacing: "-0.01em",
+            }}>
+              Top Reactions
+            </h2>
+            <p style={{ fontSize: 13, color: "#8C8580", marginTop: 2 }}>
+              Most reacted artworks this week
+            </p>
+          </div>
+          <span style={{
+            fontSize: 13,
+            fontWeight: 500,
+            color: "#C1476F",
+            cursor: "pointer",
+          }}>
+            See all →
+          </span>
+        </div>
+
+        {/* Category Cards */}
+        <div style={{ padding: "0 18px", display: "flex", flexDirection: "column", gap: 16 }}>
+          {CATEGORIES.map((cat, i) => (
+            <div
+              key={i}
+              className="category-card"
+              onClick={() => setExpandedCard(expandedCard === i ? null : i)}
+              style={{
+                borderRadius: 20,
+                overflow: "hidden",
+                background: "#FFF",
+                boxShadow: "0 2px 16px rgba(45,42,38,0.06), 0 0.5px 2px rgba(45,42,38,0.04)",
+                opacity: loaded ? 1 : 0,
+                animation: loaded ? `fadeUp 0.5s ease ${0.3 + i * 0.1}s forwards` : "none",
+                animationFillMode: "backwards",
+              }}
+            >
+              {/* Card Header */}
+              <div style={{
+                padding: "14px 16px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
+                    background: cat.bgGrad,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 22,
+                    animation: "float 3s ease infinite",
+                    animationDelay: `${i * 0.5}s`,
+                  }}>
+                    {cat.emoji}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#2D2A26" }}>
+                      {cat.label}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8C8580" }}>
+                      {cat.count.toLocaleString()} reactions
+                    </div>
+                  </div>
+                </div>
+                <div style={{
+                  padding: "4px 10px",
+                  borderRadius: 20,
+                  background: "#F2EFE9",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: "#6B6560",
+                }}>
+                  {cat.exhibition}
+                </div>
+              </div>
+
+              {/* Artwork Preview — Link navigates to detail page */}
+              <Link href={`/artwork/${cat.artwork.id}`} style={{ textDecoration: "none" }}>
+                <div style={{
+                  position: "relative",
+                  height: 200,
+                  overflow: "hidden",
+                  background: "#E8E4DD",
+                }}>
+                  <img
+                    className="artwork-img"
+                    src={cat.artwork.image}
+                    alt={cat.artwork.title}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                    onError={(e) => { e.target.style.display = "none"; }}
+                  />
+                  <div style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 100,
+                    background: "linear-gradient(transparent, rgba(45,42,38,0.75))",
+                  }} />
+                  <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 14,
+                    right: 14,
+                  }}>
+                    <div style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: 16,
+                      fontWeight: 700,
+                      color: "#FFF",
+                      lineHeight: 1.2,
+                      textShadow: "0 1px 3px rgba(0,0,0,0.3)",
+                    }}>
+                      {cat.artwork.title}
+                    </div>
+                    <div style={{
+                      fontSize: 12,
+                      color: "rgba(255,255,255,0.8)",
+                      marginTop: 2,
+                    }}>
+                      {cat.artwork.artist}, {cat.artwork.year}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Reaction pills */}
+              <div style={{
+                padding: "12px 14px",
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+              }}>
+                {Object.entries(cat.artwork.reactions).map(([emoji, count], j) => (
+                  <div
+                    key={j}
+                    className="emoji-pill"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "5px 10px",
+                      borderRadius: 20,
+                      background: j === 0 ? `${cat.color}15` : "#F5F3EE",
+                      border: j === 0 ? `1.5px solid ${cat.color}30` : "1.5px solid transparent",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span style={{ fontSize: 15 }}>{emoji}</span>
+                    <span style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: j === 0 ? cat.color : "#6B6560",
+                    }}>
+                      {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}
+                    </span>
+                  </div>
+                ))}
+                <div style={{
+                  marginLeft: "auto",
+                  fontSize: 12,
+                  color: "#A09B94",
+                  cursor: "pointer",
+                  fontWeight: 500,
+                }}>
+                  + React
+                </div>
+              </div>
+
+              {/* Comments */}
+              {cat.artwork.comments && cat.artwork.comments.length > 0 && (
+                <CommentsSection comments={cat.artwork.comments} color={cat.color} />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ height: 20 }} />
+      </div>
+
+      {/* Bottom Navigation */}
+      <BottomNav variant="light" />
     </div>
   );
 }
