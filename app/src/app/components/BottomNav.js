@@ -4,6 +4,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { getAvatar } from "../lib/guest";
 
 // The tabs array defines our 5 navigation buttons.
 // "href" is the URL each button links to.
@@ -12,18 +14,24 @@ const TABS = [
   { icon: "🗺️", label: "Gallery", id: "gallery", href: "#" },
   { icon: "📸", label: "Scan", id: "scan", href: "/scan", special: true },
   { icon: "🏆", label: "Rankings", id: "rankings", href: "#" },
-  { icon: "👤", label: "Profile", id: "profile", href: "#" },
+  { icon: "👤", label: "Profile", id: "profile", href: "/profile" },
 ];
 
 // This component is used on every page. It figures out which tab is active
 // by looking at the current URL (usePathname gives us the current path).
 export default function BottomNav({ variant = "light" }) {
   const pathname = usePathname();
+  const [profileAvatar, setProfileAvatar] = useState("👤");
+
+  useEffect(() => {
+    setProfileAvatar(getAvatar());
+  }, []);
 
   // Figure out which tab matches the current page
   const activeTab = pathname === "/" ? "home"
     : pathname.startsWith("/scan") ? "scan"
     : pathname.startsWith("/artwork") ? "home"
+    : pathname.startsWith("/profile") ? "profile"
     : "home";
 
   // Dark variant for scan and artwork detail pages, light for homepage
@@ -88,7 +96,7 @@ export default function BottomNav({ variant = "light" }) {
               opacity: activeTab === tab.id ? 1 : 0.45,
               transition: "opacity 0.2s",
             }}>
-              {tab.icon}
+              {tab.id === "profile" ? profileAvatar : tab.icon}
             </span>
           )}
           <span style={{

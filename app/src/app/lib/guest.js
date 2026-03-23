@@ -25,8 +25,35 @@ export function getGuestId() {
   return guestId;
 }
 
-// Get just the display name (same as ID for now, but we could
-// let guests pick a nickname later)
+// Get just the display name — returns custom username if set, otherwise guest ID
 export function getGuestName() {
-  return getGuestId();
+  if (typeof window === "undefined") return getGuestId();
+  return localStorage.getItem("moji-username") || getGuestId();
+}
+
+// Save a custom username
+export function setUsername(name) {
+  localStorage.setItem("moji-username", name.trim());
+}
+
+// Get the user's chosen avatar emoji (defaults to a generic face)
+export function getAvatar() {
+  if (typeof window === "undefined") return "🙂";
+  return localStorage.getItem("moji-avatar") || "🙂";
+}
+
+// Save the user's chosen avatar emoji
+export function setAvatar(emoji) {
+  localStorage.setItem("moji-avatar", emoji);
+}
+
+// Get the user's bio
+export function getBio() {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem("moji-bio") || "";
+}
+
+// Save the user's bio
+export function setBio(text) {
+  localStorage.setItem("moji-bio", text);
 }
