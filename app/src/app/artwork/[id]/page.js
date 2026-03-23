@@ -3,12 +3,16 @@
 //   /artwork/11417 → shows "Washington Crossing the Delaware"
 //   /artwork/436105 → shows "The Death of Socrates"
 // The "id" comes from the URL and is passed to this component as a prop.
+//
+// NEW: This page now tries to fetch real artwork data from the Met API.
+// If the API is unavailable, it falls back to our hardcoded data.
 "use client";
 
-import { useState, use } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import BottomNav from "../../components/BottomNav";
 import { ARTWORK_DETAIL, EMOJI_CATEGORIES, RELATED_ARTWORKS, getArtworkById } from "../../data/artworks";
+import { fetchArtwork } from "../../lib/met-api";
 
 function EmojiIntensityPicker({ catKey, category, selected, onSelect }) {
   const [open, setOpen] = useState(false);
@@ -219,8 +223,29 @@ export default function ArtDetailPage({ params }) {
   // In Next.js 16, params is a Promise — we unwrap it with use()
   const { id } = use(params);
 
-  // Look up the artwork by ID. Fall back to the default detail artwork.
-  const artwork = getArtworkById(id) || ARTWORK_DETAIL;
+  // Start with hardcoded data, then try to fetch real data from the Met API.
+  // This pattern is called "optimistic UI" — show what you have immediately,
+  // then upgrade to better data when it arrives.
+  const fallbackArtwork = getArtworkById(id) || ARTWORK_DETAIL;
+  const [artwork, setArtwork] = useState(fallbackArtwork);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadArtwork() {
+      const apiData = await fetchArtwork(id);
+      if (!cancelled && apiData && apiData.image) {
+        // Merge API data with any hardcoded data we have (for reactions/comments)
+        setArtwork(prev => ({
+          ...prev,           // keep hardcoded reactions, comments, etc.
+          ...apiData,         // overwrite with real title, artist, image, etc.
+        }));
+      }
+      if (!cancelled) setLoading(false);
+    }
+    loadArtwork();
+    return () => { cancelled = true; };
+  }, [id]);
 
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [comments, setComments] = useState(artwork.comments || []);
