@@ -6,6 +6,17 @@ import Image from "next/image";
 import BottomNav from "../components/BottomNav";
 import BookmarkButton from "../components/BookmarkButton";
 
+// Artworks ranked by total comment hearts (sum of all comment + reply likes)
+// Only artworks that have comment data qualify
+const MOST_COMMENTED = [
+  { id: "11417",  title: "Washington Crossing the Delaware",    artist: "Emanuel Leutze",       year: "1851",        image: "https://images.metmuseum.org/CRDImages/ap/original/DT100.jpg",        topEmoji: "❤️", reactions: 206, label: "comment hearts" },
+  { id: "45434",  title: "Under the Wave off Kanagawa",         artist: "Katsushika Hokusai",   year: "ca. 1830–32", image: "https://images.metmuseum.org/CRDImages/as/original/DP141139.jpg",     topEmoji: "🤔", reactions: 118, label: "comment hearts" },
+  { id: "436105", title: "The Death of Socrates",               artist: "Jacques-Louis David",  year: "1787",        image: "https://images.metmuseum.org/CRDImages/ep/original/DP-13139-001.jpg", topEmoji: "😢", reactions: 98,  label: "comment hearts" },
+  { id: "437984", title: "Water Lilies",                        artist: "Claude Monet",         year: "1919",        image: "https://images.metmuseum.org/CRDImages/ep/original/DT1877.jpg",       topEmoji: "❤️", reactions: 90,  label: "comment hearts" },
+  { id: "544",    title: "Sphinx of Hatshepsut",                artist: "Unknown",              year: "ca. 1479 B.C.",image: "https://images.metmuseum.org/CRDImages/eg/original/DP246556.jpg",    topEmoji: "😍", reactions: 88,  label: "comment hearts" },
+  { id: "35829",  title: "Armor Garniture",                     artist: "Kolman Helmschmid",    year: "ca. 1525",    image: "https://images.metmuseum.org/CRDImages/aa/original/DP-12881-005.jpg", topEmoji: "😱", reactions: 46,  label: "comment hearts" },
+];
+
 // All artworks with total reactions computed from source data
 const RANKED_ARTWORKS = [
   { id: "437984",  title: "Water Lilies",                        artist: "Claude Monet",           year: "1919",          image: "https://images.metmuseum.org/CRDImages/ep/original/DT1877.jpg",       topEmoji: "❤️",  reactions: 5944 },
@@ -31,7 +42,10 @@ function fmt(n) {
 
 export default function RankingsPage() {
   const [activeTab, setActiveTab] = useState(0);
-  const [top1, top2, top3, ...rest] = RANKED_ARTWORKS;
+  const data = activeTab === 2 ? MOST_COMMENTED : RANKED_ARTWORKS;
+  const metricLabel = activeTab === 2 ? "comment hearts" : "reactions";
+  const metricIcon = activeTab === 2 ? "❤️" : null;
+  const [top1, top2, top3, ...rest] = data;
 
   return (
     <div className="responsive-page" style={{ minHeight: "100vh", background: "#F7F5F0", display: "flex", flexDirection: "column" }}>
@@ -131,9 +145,9 @@ export default function RankingsPage() {
               </div>
               {/* Stats row */}
               <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 20 }}>{top1.topEmoji}</span>
+                <span style={{ fontSize: 20 }}>{metricIcon || top1.topEmoji}</span>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#2D2A26" }}>{fmt(top1.reactions)}</span>
-                <span style={{ fontSize: 12, color: "#A09B94" }}>reactions</span>
+                <span style={{ fontSize: 12, color: "#A09B94" }}>{metricLabel}</span>
                 <div style={{
                   marginLeft: "auto", padding: "3px 10px", borderRadius: 12,
                   background: "rgba(245,166,35,0.12)", border: "1px solid rgba(245,166,35,0.3)",
@@ -228,7 +242,7 @@ export default function RankingsPage() {
 
                   {/* Reaction count */}
                   <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                    <span style={{ fontSize: 14 }}>{art.topEmoji}</span>
+                    <span style={{ fontSize: 14 }}>{metricIcon || art.topEmoji}</span>
                     <span style={{ fontSize: 13, fontWeight: 600, color: "#6B6560" }}>{fmt(art.reactions)}</span>
                   </div>
 

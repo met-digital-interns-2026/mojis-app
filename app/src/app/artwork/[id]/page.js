@@ -238,7 +238,6 @@ export default function ArtDetailPage({ params }) {
   const [newComment, setNewComment] = useState("");
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
   const visibleComments = showAllComments ? comments : comments.slice(0, 3);
 
   const handleEmojiSelect = (category, level, emoji) => {
@@ -339,57 +338,21 @@ export default function ArtDetailPage({ params }) {
           )}
         </div>
 
-        {/* Description — collapsible */}
-        {artwork.description && (
+        {/* About This Work */}
+        {artwork.fact && (
           <div style={{ padding: "16px 20px 0", animation: "fadeUp 0.4s ease 0.1s both" }}>
-            <button
-              onClick={() => setShowAbout(!showAbout)}
-              style={{
-                width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-                background: "#EDEAE4", border: "1px solid rgba(0,0,0,0.07)",
-                borderRadius: showAbout ? "14px 14px 0 0" : 14, padding: "10px 14px",
-                cursor: "pointer", transition: "all 0.2s ease",
-              }}
-            >
-              <span style={{
-                fontSize: 12, fontWeight: 600, color: "#8C8580",
-                letterSpacing: "0.06em", textTransform: "uppercase",
-              }}>About This Work</span>
-              <span style={{
-                fontSize: 18, color: "#A09B94",
-                transition: "transform 0.2s ease",
-                transform: showAbout ? "rotate(180deg)" : "rotate(0deg)",
-                lineHeight: 1,
-              }}>
-                {showAbout ? "▴" : "⋯"}
-              </span>
-            </button>
-            {showAbout && (
-              <div style={{
-                background: "#EDEAE4", border: "1px solid rgba(0,0,0,0.07)",
-                borderTop: "none", borderRadius: "0 0 14px 14px", padding: "12px 14px 14px",
-                animation: "fadeUp 0.25s ease",
-              }}>
-                <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.6 }}>
-                  {artwork.description}
-                </p>
-                {artwork.medium && (
-                  <div style={{
-                    display: "flex", gap: 16, marginTop: 12, padding: "10px 0 0",
-                    borderTop: "1px solid rgba(0,0,0,0.06)",
-                  }}>
-                    <div>
-                      <div style={{ fontSize: 10, color: "#A09B94", textTransform: "uppercase", letterSpacing: "0.05em" }}>Medium</div>
-                      <div style={{ fontSize: 12, color: "#6B6560", marginTop: 2 }}>{artwork.medium}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 10, color: "#A09B94", textTransform: "uppercase", letterSpacing: "0.05em" }}>Dimensions</div>
-                      <div style={{ fontSize: 12, color: "#6B6560", marginTop: 2 }}>{artwork.dimensions}</div>
-                    </div>
-                  </div>
-                )}
+            <div style={{ background: "#FFF", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.07)" }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+                About This Work
               </div>
-            )}
+              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#2D2A26" }}>{artwork.artist}</div>
+                  <div style={{ fontSize: 12, color: "#8C8580" }}>{artwork.year}</div>
+                </div>
+              </div>
+              <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact}</p>
+            </div>
           </div>
         )}
 

@@ -15,6 +15,7 @@ export const CATEGORIES = [
       artist: "Jacques-Louis David",
       year: "1787",
       image: "https://images.metmuseum.org/CRDImages/ep/original/DP-13139-001.jpg",
+      fact: "Painted just two years before the French Revolution, David chose this subject to stir the spirit of civic duty over self-interest sweeping Europe. Socrates, condemned for his beliefs, chose death by hemlock over exile — a decision that still unsettles viewers today.",
       reactions: { "😢": 1243, "😮": 892, "🤔": 712 },
       comments: [
         { user: "ArtLover42", emoji: "😢", text: "This one hits different when you see it in person", likes: 24, replies: [
@@ -41,6 +42,7 @@ export const CATEGORIES = [
       artist: "Claude Monet",
       year: "1919",
       image: "https://images.metmuseum.org/CRDImages/ep/original/DT1877.jpg",
+      fact: "Monet began his Water Lilies series as cataracts slowly destroyed his sight, blurring color and softening edges. Art historians believe his increasingly luminous, abstract style was shaped by what he could no longer clearly see — turning failing vision into one of art's greatest achievements.",
       reactions: { "❤️": 3891, "😍": 1211, "✨": 842 },
       comments: [
         { user: "PaintingPro", emoji: "❤️", text: "I could stare at this for hours honestly", likes: 42, replies: [
@@ -63,6 +65,7 @@ export const CATEGORIES = [
       artist: "Attributed to Kolman Helmschmid",
       year: "ca. 1525",
       image: "https://images.metmuseum.org/CRDImages/aa/original/DP-12881-005.jpg",
+      fact: "Crafted for a member of Emperor Maximilian I's court around 1525, this suit weighs over 50 lbs yet allowed near-full range of motion — every joint was engineered to move with the body. The intricate engraving covering every surface made it as much a statement of extreme wealth as a weapon of war.",
       reactions: { "😱": 987, "😮": 654, "🔥": 315 },
       comments: [
         { user: "KnightFan", emoji: "😱", text: "Imagine actually wearing this into battle", likes: 15, replies: [
@@ -85,6 +88,7 @@ export const CATEGORIES = [
       artist: "Katsushika Hokusai",
       year: "ca. 1830–32",
       image: "https://images.metmuseum.org/CRDImages/as/original/DP141139.jpg",
+      fact: "Often mistaken for a painting, this is actually a woodblock print — one of roughly 5,000–8,000 original copies Hokusai produced. The tiny white peak in the upper right isn't seafoam: it's Mount Fuji, deliberately dwarfed to show the overwhelming power of nature over the familiar and permanent.",
       reactions: { "🤔": 1567, "😍": 1102, "✨": 542 },
       comments: [
         { user: "WaveCatcher", emoji: "🤔", text: "Is it about nature's power or human smallness?", likes: 27, replies: [
@@ -110,6 +114,7 @@ export const CATEGORIES = [
       artist: "Unknown",
       year: "ca. 1479–1458 B.C.",
       image: "https://images.metmuseum.org/CRDImages/eg/original/DP246556.jpg",
+      fact: "Hatshepsut ruled Egypt for over 20 years as one of its most successful pharaohs, but after her death her successor tried to erase her from history — smashing her statues and chiseling her name from monuments. This sphinx survived only because it was buried under rubble, hidden for thousands of years.",
       reactions: { "😍": 2104, "😮": 1305, "❤️": 911 },
       comments: [
         { user: "EgyptFan", emoji: "😍", text: "A female pharaoh!! She was ahead of her time", likes: 38, replies: [
@@ -150,7 +155,7 @@ export const ARTWORK_DETAIL = {
   medium: "Oil on canvas",
   dimensions: "149 × 255 in. (378.5 × 647.7 cm)",
   image: "https://images.metmuseum.org/CRDImages/ap/original/DT100.jpg",
-  description: "This iconic painting captures George Washington's daring surprise crossing of the Delaware River on December 25–26, 1776, a turning point of the American Revolution. Leutze, a German-American painter, created this monumental work in Düsseldorf to inspire liberal reformers in Europe. The dramatic composition, luminous sky, and heroic poses have made it one of the most recognized images in American art.",
+  fact: "Leutze painted this in Germany, not America — using fellow immigrants as models and creating it to inspire European liberals with ideals of freedom. The flag shown didn't exist in 1776, but Leutze chose emotional truth over historical accuracy, and it became one of the most recognizable images in American history.",
   reactions: { "😍": 1893, "😮": 1241, "🇺🇸": 876, "🔥": 654 },
   totalReactions: 4664,
   comments: [
