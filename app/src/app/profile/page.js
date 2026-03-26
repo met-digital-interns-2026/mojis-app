@@ -1,29 +1,81 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import BottomNav from "../components/BottomNav";
 import { getGuestId, getGuestName, setUsername, getAvatar, setAvatar, getBio, setBio } from "../lib/guest";
+import { FEATURED_ARTWORKS } from "../data/artworks";
 
 const BIO_LIMIT = 150;
 
-// A broad, fun set of emojis for the avatar picker
-const AVATAR_EMOJIS = [
-  "🙂","😄","😎","🤩","🥳","😇","🤓","😏","🥸","🤠",
-  "👻","🐱","🐶","🦊","🐼","🐨","🦁","🐯","🐸","🐧",
-  "🦋","🌸","🌻","🌈","⭐","🔥","💎","🎨","🎭","🏛️",
-  "🦄","🐲","🦩","🦚","🦜","🐬","🐙","🦑","🦀","🐝",
-  "🍀","🌵","🍄","🎸","🎹","🎺","🪄","🔮","🧿","🎯",
-];
+// True if the stored avatar value is an image URL rather than an emoji
+function isImageUrl(value) {
+  return typeof value === "string" && value.startsWith("http");
+}
+
+// Renders the avatar — either a circular artwork image or an emoji
+function AvatarDisplay({ value, size = 88, editing = false, onClick }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        overflow: "hidden",
+        background: "linear-gradient(135deg, #F7EFE8 0%, #EDE4F8 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: size * 0.55,
+        cursor: editing ? "pointer" : "default",
+        position: "relative",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.10)",
+        flexShrink: 0,
+      }}
+    >
+      {isImageUrl(value) ? (
+        <Image
+          src={value}
+          alt="avatar"
+          width={size}
+          height={size}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          unoptimized
+        />
+      ) : (
+        value
+      )}
+      {editing && (
+        <div style={{
+          position: "absolute",
+          bottom: 2,
+          right: 2,
+          width: 22,
+          height: 22,
+          borderRadius: "50%",
+          background: "#C1476F",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 11,
+        }}>
+          ✏️
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const [loaded, setLoaded] = useState(false);
   const [guestId, setGuestId] = useState("");
   const [username, setUsernameState] = useState("");
-  const [avatar, setAvatarState] = useState("🙂");
+  const [avatar, setAvatarState] = useState("");
   const [bio, setBioState] = useState("");
   const [editing, setEditing] = useState(false);
   const [draftUsername, setDraftUsername] = useState("");
-  const [draftAvatar, setDraftAvatar] = useState("🙂");
+  const [draftAvatar, setDraftAvatar] = useState("");
   const [draftBio, setDraftBio] = useState("");
   const [saved, setSaved] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -85,18 +137,19 @@ export default function ProfilePage() {
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes pop {
-          0% { transform: scale(0.85); opacity: 0; }
+          0% { transform: scale(0.92); opacity: 0; }
           100% { transform: scale(1); opacity: 1; }
         }
         .profile-card { animation: fadeUp 0.35s ease both; }
-        .avatar-emoji-btn {
+        .art-thumb {
           cursor: pointer;
-          transition: transform 0.15s ease, background 0.15s ease;
-          border-radius: 12px;
-          padding: 4px;
+          border-radius: 50%;
+          overflow: hidden;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          flex-shrink: 0;
         }
-        .avatar-emoji-btn:hover { transform: scale(1.2); background: rgba(0,0,0,0.06); }
-        .avatar-emoji-btn.selected { background: rgba(193,71,111,0.15); outline: 2px solid #C1476F; }
+        .art-thumb:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(0,0,0,0.2); }
+        .art-thumb.selected { outline: 3px solid #C1476F; outline-offset: 2px; }
         input:focus, textarea:focus { outline: none; }
       `}</style>
 
@@ -143,77 +196,61 @@ export default function ProfilePage() {
           gap: 12,
           boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
         }}>
-          {/* Avatar display */}
-          <div
+          <AvatarDisplay
+            value={editing ? draftAvatar : avatar}
+            editing={editing}
             onClick={editing ? () => setPickerOpen(p => !p) : undefined}
-            style={{
-              width: 88,
-              height: 88,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #F7EFE8 0%, #EDE4F8 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 48,
-              cursor: editing ? "pointer" : "default",
-              position: "relative",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-              transition: "transform 0.2s",
-            }}
-          >
-            {editing ? draftAvatar : avatar}
-            {editing && (
-              <div style={{
-                position: "absolute",
-                bottom: 2,
-                right: 2,
-                width: 22,
-                height: 22,
-                borderRadius: "50%",
-                background: "#C1476F",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 11,
-                color: "#fff",
-              }}>
-                ✏️
-              </div>
-            )}
-          </div>
+          />
 
-          {/* Emoji picker */}
+          {/* Artwork picker */}
           {editing && pickerOpen && (
             <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(10, 1fr)",
-              gap: 4,
-              background: "#F7F5F0",
-              borderRadius: 16,
-              padding: 12,
               width: "100%",
+              background: "#F7F5F0",
+              borderRadius: 18,
+              padding: 14,
               animation: "pop 0.2s ease both",
             }}>
-              {AVATAR_EMOJIS.map(e => (
-                <button
-                  key={e}
-                  className={`avatar-emoji-btn${draftAvatar === e ? " selected" : ""}`}
-                  onClick={() => { setDraftAvatar(e); setPickerOpen(false); }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    fontSize: 22,
-                    cursor: "pointer",
-                    lineHeight: 1,
-                    aspectRatio: "1",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {e}
-                </button>
-              ))}
+              <p style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+                Choose an artwork
+              </p>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(5, 1fr)",
+                gap: 8,
+              }}>
+                {FEATURED_ARTWORKS.map(art => (
+                  <div key={art.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <div
+                      className={`art-thumb${draftAvatar === art.image ? " selected" : ""}`}
+                      onClick={() => { setDraftAvatar(art.image); setPickerOpen(false); }}
+                      style={{ width: 48, height: 48 }}
+                    >
+                      <Image
+                        src={art.image}
+                        alt={art.title}
+                        width={48}
+                        height={48}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        unoptimized
+                      />
+                    </div>
+                    <span style={{
+                      fontSize: 9,
+                      color: "#A09B94",
+                      textAlign: "center",
+                      lineHeight: 1.2,
+                      maxWidth: 52,
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}>
+                      {art.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -337,7 +374,6 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Saved confirmation */}
         {saved && (
           <div style={{
             textAlign: "center",

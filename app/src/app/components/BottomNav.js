@@ -3,6 +3,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getAvatar } from "../lib/guest";
@@ -89,6 +90,25 @@ export default function BottomNav({ variant = "light" }) {
               boxShadow: "0 4px 16px rgba(193,71,111,0.35)",
             }}>
               {tab.icon}
+            </div>
+          ) : tab.id === "profile" && profileAvatar.startsWith("http") ? (
+            <div style={{
+              width: 26,
+              height: 26,
+              borderRadius: "50%",
+              overflow: "hidden",
+              opacity: activeTab === tab.id ? 1 : 0.45,
+              transition: "opacity 0.2s",
+              flexShrink: 0,
+            }}>
+              <Image
+                src={profileAvatar}
+                alt="avatar"
+                width={26}
+                height={26}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                unoptimized
+              />
             </div>
           ) : (
             <span style={{

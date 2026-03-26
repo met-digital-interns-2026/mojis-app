@@ -175,6 +175,20 @@ export const RELATED_ARTWORKS = [
   { id: "11189", title: "The Veteran in a New Field", artist: "Winslow Homer", year: "1865", image: "https://images.metmuseum.org/CRDImages/ap/original/DT1880.jpg", topEmoji: "🤔", reactions: 654 },
 ];
 
+// Flat list of all featured artworks available as avatar choices
+export const FEATURED_ARTWORKS = [
+  { id: "436105",  title: "The Death of Socrates",                artist: "Jacques-Louis David",        image: "https://images.metmuseum.org/CRDImages/ep/original/DP-13139-001.jpg" },
+  { id: "437984",  title: "Water Lilies",                         artist: "Claude Monet",               image: "https://images.metmuseum.org/CRDImages/ep/original/DT1877.jpg" },
+  { id: "35829",   title: "Armor Garniture",                      artist: "Kolman Helmschmid",          image: "https://images.metmuseum.org/CRDImages/aa/original/DP-12881-005.jpg" },
+  { id: "45434",   title: "Under the Wave off Kanagawa",          artist: "Katsushika Hokusai",         image: "https://images.metmuseum.org/CRDImages/as/original/DP141139.jpg" },
+  { id: "544",     title: "Sphinx of Hatshepsut",                 artist: "Unknown",                    image: "https://images.metmuseum.org/CRDImages/eg/original/DP246556.jpg" },
+  { id: "11417",   title: "Washington Crossing the Delaware",     artist: "Emanuel Leutze",             image: "https://images.metmuseum.org/CRDImages/ap/original/DT100.jpg" },
+  { id: "11507",   title: "The Rocky Mountains, Lander's Peak",   artist: "Albert Bierstadt",           image: "https://images.metmuseum.org/CRDImages/ap/original/DT160.jpg" },
+  { id: "10159",   title: "Fur Traders Descending the Missouri",  artist: "George Caleb Bingham",       image: "https://images.metmuseum.org/CRDImages/ap/original/DT68.jpg" },
+  { id: "10814",   title: "Heart of the Andes",                   artist: "Frederic Edwin Church",      image: "https://images.metmuseum.org/CRDImages/ap/original/DT51.jpg" },
+  { id: "11189",   title: "The Veteran in a New Field",           artist: "Winslow Homer",              image: "https://images.metmuseum.org/CRDImages/ap/original/DT1880.jpg" },
+];
+
 // Helper: look up an artwork by ID from all our data
 export function getArtworkById(id) {
   if (ARTWORK_DETAIL.id === id) return ARTWORK_DETAIL;
