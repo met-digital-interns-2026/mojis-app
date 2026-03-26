@@ -11,7 +11,7 @@ const TABS = [
   { icon: "🏠", label: "Home",     id: "home",     href: "/" },
   { icon: "🗺️", label: "Gallery",  id: "gallery",  href: "#" },
   { icon: "📸", label: "Scan",     id: "scan",     href: "/scan", special: true },
-  { icon: "🏆", label: "Rankings", id: "rankings", href: "#" },
+  { icon: "🏆", label: "Rankings", id: "rankings", href: "/rankings" },
   { icon: "👤", label: "Profile",  id: "profile",  href: "/profile" },
 ];
 
@@ -32,6 +32,7 @@ export default function BottomNav({ variant = "light" }) {
     : pathname.startsWith("/scan")             ? "scan"
     : pathname.startsWith("/artwork")          ? "home"
     : pathname.startsWith("/profile")          ? "profile"
+    : pathname.startsWith("/rankings")         ? "rankings"
     : "home";
 
   const isDark = variant === "dark" && !isDesktop;
