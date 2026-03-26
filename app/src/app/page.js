@@ -10,6 +10,15 @@ import CommentsSection from "./components/CommentsSection";
 import { CATEGORIES, TRENDING } from "./data/artworks";
 import { getAvatar } from "./lib/guest";
 
+// Category whose comments have the most total likes — shown as a featured wide card on desktop
+function totalCommentLikes(cat) {
+  return (cat.artwork.comments || []).reduce((s, c) =>
+    s + (c.likes || 0) + (c.replies || []).reduce((rs, r) => rs + (r.likes || 0), 0), 0);
+}
+const FEATURED_IDX = CATEGORIES.reduce(
+  (best, cat, i, arr) => totalCommentLikes(cat) > totalCommentLikes(arr[best]) ? i : best, 0
+);
+
 export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
   const [expandedCard, setExpandedCard] = useState(null);
@@ -208,93 +217,148 @@ export default function HomePage() {
 
         {/* Category Cards — 1-col on mobile/tablet, 2-col on desktop */}
         <div className="cards-grid" style={{ marginTop: isDesktop ? 24 : 0 }}>
-          {CATEGORIES.map((cat, i) => (
-            <div
-              key={i}
-              className="category-card"
-              onClick={() => setExpandedCard(expandedCard === i ? null : i)}
-              style={{
-                borderRadius: 20,
-                overflow: "hidden",
-                background: "#FFF",
-                boxShadow: "0 2px 16px rgba(45,42,38,0.06), 0 0.5px 2px rgba(45,42,38,0.04)",
-                opacity: loaded ? 1 : 0,
-                animation: loaded ? `fadeUp 0.5s ease ${0.3 + i * 0.1}s forwards` : "none",
-                animationFillMode: "backwards",
-              }}
-            >
-              {/* Card Header */}
-              <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div style={{
-                    width: 42, height: 42, borderRadius: 12, background: cat.bgGrad,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 22, animation: "float 3s ease infinite", animationDelay: `${i * 0.5}s`,
-                  }}>{cat.emoji}</div>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "#2D2A26" }}>{cat.label}</div>
-                    <div style={{ fontSize: 12, color: "#8C8580" }}>{cat.count.toLocaleString()} reactions</div>
-                  </div>
-                </div>
-                {/* Exhibition badge */}
-                <div style={{ padding: "4px 10px", borderRadius: 20, background: "#F2EFE9", fontSize: 11, fontWeight: 500, color: "#6B6560" }}>
-                  {cat.exhibition}
-                </div>
-              </div>
+          {CATEGORIES.map((cat, i) => {
+            const isFeatured = isDesktop && i === FEATURED_IDX;
+            const topComments = isFeatured
+              ? [...(cat.artwork.comments || [])].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 3)
+              : [];
 
-              {/* Artwork Preview */}
-              <Link href={`/artwork/${cat.artwork.id}`} style={{ textDecoration: "none" }}>
-                <div style={{ position: "relative", height: 200, overflow: "hidden", background: "#E8E4DD" }}>
-                  <img
-                    className="artwork-img"
-                    src={cat.artwork.image}
-                    alt={cat.artwork.title}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    onError={(e) => { e.target.style.display = "none"; }}
-                  />
-                  {/* Artwork bookmark — top-right of image */}
-                  <div style={{ position: "absolute", top: 10, right: 10, zIndex: 5 }} onClick={e => e.stopPropagation()}>
-                    <BookmarkButton type="artwork" id={cat.artwork.id} size={32} />
-                  </div>
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100, background: "linear-gradient(transparent, rgba(45,42,38,0.75))" }} />
-                  <div style={{ position: "absolute", bottom: 12, left: 14, right: 14 }}>
-                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: "#FFF", lineHeight: 1.2, textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
-                      {cat.artwork.title}
-                    </div>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>
-                      {cat.artwork.artist}, {cat.artwork.year}
+            // Shared card content (left side for featured, full card otherwise)
+            const cardContent = (
+              <>
+                {/* Card Header */}
+                <div style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 42, height: 42, borderRadius: 12, background: cat.bgGrad,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 22, animation: "float 3s ease infinite", animationDelay: `${i * 0.5}s`,
+                    }}>{cat.emoji}</div>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#2D2A26" }}>{cat.label}</div>
+                      <div style={{ fontSize: 12, color: "#8C8580" }}>{cat.count.toLocaleString()} reactions</div>
                     </div>
                   </div>
-                </div>
-              </Link>
-
-              {/* Reaction pills */}
-              <div style={{ padding: "12px 14px", display: "flex", gap: 8, alignItems: "center" }}>
-                {Object.entries(cat.artwork.reactions).map(([emoji, count], j) => (
-                  <div key={j} className="emoji-pill" style={{
-                    display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
-                    borderRadius: 20,
-                    background: j === 0 ? `${cat.color}15` : "#F5F3EE",
-                    border: j === 0 ? `1.5px solid ${cat.color}30` : "1.5px solid transparent",
-                    cursor: "pointer",
-                  }}>
-                    <span style={{ fontSize: 15 }}>{emoji}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: j === 0 ? cat.color : "#6B6560" }}>
-                      {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}
-                    </span>
+                  <div style={{ padding: "4px 10px", borderRadius: 20, background: "#F2EFE9", fontSize: 11, fontWeight: 500, color: "#6B6560" }}>
+                    {cat.exhibition}
                   </div>
-                ))}
-                <div style={{ marginLeft: "auto", fontSize: 12, color: "#A09B94", cursor: "pointer", fontWeight: 500 }}>
-                  + React
                 </div>
-              </div>
 
-              {/* Comments */}
-              {cat.artwork.comments?.length > 0 && (
-                <CommentsSection comments={cat.artwork.comments} color={cat.color} />
-              )}
-            </div>
-          ))}
+                {/* Artwork Preview */}
+                <Link href={`/artwork/${cat.artwork.id}`} style={{ textDecoration: "none" }}>
+                  <div style={{ position: "relative", height: 200, overflow: "hidden", background: "#E8E4DD" }}>
+                    <img
+                      className="artwork-img"
+                      src={cat.artwork.image}
+                      alt={cat.artwork.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => { e.target.style.display = "none"; }}
+                    />
+                    <div style={{ position: "absolute", top: 10, right: 10, zIndex: 5 }} onClick={e => e.stopPropagation()}>
+                      <BookmarkButton type="artwork" id={cat.artwork.id} size={32} />
+                    </div>
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100, background: "linear-gradient(transparent, rgba(45,42,38,0.75))" }} />
+                    <div style={{ position: "absolute", bottom: 12, left: 14, right: 14 }}>
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: "#FFF", lineHeight: 1.2, textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
+                        {cat.artwork.title}
+                      </div>
+                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>
+                        {cat.artwork.artist}, {cat.artwork.year}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+
+                {/* Reaction pills */}
+                <div style={{ padding: "12px 14px", display: "flex", gap: 8, alignItems: "center" }}>
+                  {Object.entries(cat.artwork.reactions).map(([emoji, count], j) => (
+                    <div key={j} className="emoji-pill" style={{
+                      display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
+                      borderRadius: 20,
+                      background: j === 0 ? `${cat.color}15` : "#F5F3EE",
+                      border: j === 0 ? `1.5px solid ${cat.color}30` : "1.5px solid transparent",
+                      cursor: "pointer",
+                    }}>
+                      <span style={{ fontSize: 15 }}>{emoji}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: j === 0 ? cat.color : "#6B6560" }}>
+                        {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}
+                      </span>
+                    </div>
+                  ))}
+                  <div style={{ marginLeft: "auto", fontSize: 12, color: "#A09B94", cursor: "pointer", fontWeight: 500 }}>
+                    + React
+                  </div>
+                </div>
+
+                {/* Comments */}
+                {cat.artwork.comments?.length > 0 && (
+                  <CommentsSection comments={cat.artwork.comments} color={cat.color} />
+                )}
+              </>
+            );
+
+            return (
+              <div
+                key={i}
+                className="category-card"
+                onClick={() => setExpandedCard(expandedCard === i ? null : i)}
+                style={{
+                  gridColumn: isFeatured ? "1 / -1" : undefined,
+                  borderRadius: 20,
+                  overflow: "hidden",
+                  background: "#FFF",
+                  boxShadow: "0 2px 16px rgba(45,42,38,0.06), 0 0.5px 2px rgba(45,42,38,0.04)",
+                  opacity: loaded ? 1 : 0,
+                  animation: loaded ? `fadeUp 0.5s ease ${0.3 + i * 0.1}s forwards` : "none",
+                  animationFillMode: "backwards",
+                }}
+              >
+                {isFeatured ? (
+                  /* Featured: card content left + most-loved comments right */
+                  <div style={{ display: "flex" }}>
+                    <div style={{ flex: "1 1 0", minWidth: 0 }}>{cardContent}</div>
+                    <div style={{
+                      width: 300, flexShrink: 0,
+                      borderLeft: "1px solid rgba(0,0,0,0.06)",
+                      background: "#FAFAF8",
+                      padding: "20px 18px",
+                      display: "flex", flexDirection: "column", gap: 12,
+                    }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        💬 Most Loved Comments
+                      </div>
+                      {topComments.map((c, ci) => (
+                        <div key={ci} style={{
+                          padding: "12px 14px", background: "#FFF",
+                          borderRadius: 14, border: "1px solid rgba(0,0,0,0.07)",
+                          boxShadow: "0 1px 6px rgba(0,0,0,0.04)",
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                            <span style={{ fontSize: 15 }}>{c.emoji}</span>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: "#2D2A26" }}>{c.user}</span>
+                            <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#C1476F" }}>
+                              ❤️ {c.likes}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 13, color: "#6B6560", lineHeight: 1.45 }}>{c.text}</div>
+                        </div>
+                      ))}
+                      <Link href={`/artwork/${cat.artwork.id}`} style={{ textDecoration: "none", marginTop: "auto" }} onClick={e => e.stopPropagation()}>
+                        <div style={{
+                          textAlign: "center", padding: "10px 14px",
+                          background: `${cat.color}10`,
+                          border: `1.5px solid ${cat.color}25`,
+                          borderRadius: 12, fontSize: 12, fontWeight: 600, color: cat.color,
+                        }}>
+                          See all comments →
+                        </div>
+                      </Link>
+                    </div>
+                  </div>
+                ) : cardContent}
+              </div>
+            );
+          })}
         </div>
 
         <div style={{ height: 20 }} />

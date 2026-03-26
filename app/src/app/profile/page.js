@@ -6,6 +6,9 @@ import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import { getGuestId, getGuestName, setUsername, getAvatar, setAvatar, getBio, setBio, getFavorites, saveFavorites } from "../lib/guest";
 import { FEATURED_ARTWORKS } from "../data/artworks";
+import { getSession, signOut, onAuthChange } from "../lib/auth";
+import { isConnected } from "../lib/supabase";
+import AuthModal from "../components/AuthModal";
 
 const BIO_LIMIT = 150;
 
@@ -143,6 +146,9 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [favPickerOpen, setFavPickerOpen] = useState(false);
+  const [session, setSession] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState("signup");
 
   useEffect(() => {
     setGuestId(getGuestId());
@@ -151,6 +157,10 @@ export default function ProfilePage() {
     setBioState(getBio());
     setFavoritesState(getFavorites());
     setLoaded(true);
+    // Load auth session
+    getSession().then(setSession);
+    const unsubscribe = onAuthChange(setSession);
+    return unsubscribe;
   }, []);
 
   function startEditing() {
@@ -208,6 +218,13 @@ export default function ProfilePage() {
       minHeight: "100vh", background: "#F7F5F0",
       display: "flex", flexDirection: "column",
     }}>
+      {showAuthModal && (
+        <AuthModal
+          initialMode={authModalMode}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={(data) => { setSession(data?.session ?? null); setShowAuthModal(false); }}
+        />
+      )}
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(16px); }
@@ -351,6 +368,55 @@ export default function ProfilePage() {
             }}>
               {bio || "No bio yet. Tap Edit to add one!"}
             </p>
+          )}
+        </div>
+
+        {/* Account card */}
+        <div className="profile-card" style={{
+          background: "#FFF", borderRadius: 24, padding: 20,
+          boxShadow: "0 2px 16px rgba(0,0,0,0.06)", animationDelay: "0.08s",
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#A09B94", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            Account
+          </div>
+          {!isConnected() ? (
+            <p style={{ fontSize: 13, color: "#A09B94", fontStyle: "italic" }}>
+              Connect Supabase to enable accounts. Add credentials to .env.local.
+            </p>
+          ) : session ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#2D2A26" }}>{session.user.email}</div>
+                <div style={{ fontSize: 11, color: "#A09B94", marginTop: 2 }}>Signed in</div>
+              </div>
+              <button
+                onClick={async () => { await signOut(); setSession(null); }}
+                style={{
+                  background: "none", border: "1.5px solid rgba(0,0,0,0.12)", borderRadius: 12,
+                  padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "#8C8580", cursor: "pointer",
+                }}
+              >Sign out</button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => { setAuthModalMode("signup"); setShowAuthModal(true); }}
+                style={{
+                  flex: 1, background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
+                  border: "none", borderRadius: 14, padding: "11px",
+                  fontSize: 13, fontWeight: 700, color: "#FFF", cursor: "pointer",
+                  boxShadow: "0 3px 12px rgba(193,71,111,0.25)",
+                }}
+              >Create Account</button>
+              <button
+                onClick={() => { setAuthModalMode("login"); setShowAuthModal(true); }}
+                style={{
+                  flex: 1, background: "none", border: "1.5px solid rgba(0,0,0,0.12)",
+                  borderRadius: 14, padding: "11px",
+                  fontSize: 13, fontWeight: 600, color: "#2D2A26", cursor: "pointer",
+                }}
+              >Sign In</button>
+            </div>
           )}
         </div>
 

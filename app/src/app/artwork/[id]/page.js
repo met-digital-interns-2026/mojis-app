@@ -7,6 +7,9 @@ import BottomNav from "../../components/BottomNav";
 import BookmarkButton from "../../components/BookmarkButton";
 import { ARTWORK_DETAIL, EMOJI_CATEGORIES, RELATED_ARTWORKS, getArtworkById } from "../../data/artworks";
 import { fetchArtwork } from "../../lib/met-api";
+import AuthModal from "../../components/AuthModal";
+import { getSession } from "../../lib/auth";
+import { isConnected } from "../../lib/supabase";
 
 // openCategory / onToggle ensure only one picker is open at a time
 function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCategory, onToggle }) {
@@ -238,6 +241,7 @@ export default function ArtDetailPage({ params }) {
   const [newComment, setNewComment] = useState("");
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const visibleComments = showAllComments ? comments : comments.slice(0, 3);
 
   const handleEmojiSelect = (category, level, emoji) => {
@@ -256,12 +260,29 @@ export default function ArtDetailPage({ params }) {
     }
   };
 
+  async function handleCommentButtonClick() {
+    if (isConnected()) {
+      const session = await getSession();
+      if (!session) { setShowAuthModal(true); return; }
+    }
+    setShowCommentInput(true);
+  }
+
   return (
     <div className="responsive-page" style={{
       height: "100vh",
       background: "#F7F5F0",
       position: "relative", overflow: "hidden", display: "flex", flexDirection: "column",
     }}>
+      {showAuthModal && (
+        <AuthModal
+          title="Join to comment"
+          subtitle="Create a free account to share your thoughts on this artwork."
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={() => { setShowAuthModal(false); setShowCommentInput(true); }}
+          onGuest={() => { setShowAuthModal(false); setShowCommentInput(true); }}
+        />
+      )}
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -466,7 +487,7 @@ export default function ArtDetailPage({ params }) {
                 </div>
               </div>
             ) : (
-              <button onClick={() => setShowCommentInput(true)} style={{
+              <button onClick={handleCommentButtonClick} style={{
                 width: "100%", marginTop: 12, padding: "10px 14px",
                 background: "#FFF", border: "1.5px dashed #D9D5CE",
                 borderRadius: 12, fontSize: 12, color: "#A09B94",
