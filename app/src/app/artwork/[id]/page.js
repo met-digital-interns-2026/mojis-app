@@ -1,11 +1,4 @@
 // Artwork Detail page — shows full info about one artwork.
-// The [id] in the folder name means this page is "dynamic":
-//   /artwork/11417 → shows "Washington Crossing the Delaware"
-//   /artwork/436105 → shows "The Death of Socrates"
-// The "id" comes from the URL and is passed to this component as a prop.
-//
-// NEW: This page now tries to fetch real artwork data from the Met API.
-// If the API is unavailable, it falls back to our hardcoded data.
 "use client";
 
 import { useState, useEffect, use } from "react";
@@ -14,17 +7,18 @@ import BottomNav from "../../components/BottomNav";
 import { ARTWORK_DETAIL, EMOJI_CATEGORIES, RELATED_ARTWORKS, getArtworkById } from "../../data/artworks";
 import { fetchArtwork } from "../../lib/met-api";
 
-function EmojiIntensityPicker({ catKey, category, selected, onSelect }) {
-  const [open, setOpen] = useState(false);
+// openCategory / onToggle ensure only one picker is open at a time
+function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCategory, onToggle }) {
   const isSelected = selected?.category === catKey;
+  const isOpen = openCategory === catKey;
 
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => onToggle(isOpen ? null : catKey)}
         style={{
-          background: isSelected ? `${category.color}15` : "rgba(255,255,255,0.06)",
-          border: isSelected ? `2px solid ${category.color}50` : "2px solid rgba(255,255,255,0.08)",
+          background: isSelected ? `${category.color}15` : "rgba(0,0,0,0.05)",
+          border: isSelected ? `2px solid ${category.color}50` : "2px solid rgba(0,0,0,0.08)",
           borderRadius: 14,
           padding: "6px 12px",
           cursor: "pointer",
@@ -33,7 +27,7 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect }) {
           gap: 5,
           fontSize: 13,
           fontWeight: 600,
-          color: isSelected ? category.color : "rgba(255,255,255,0.5)",
+          color: isSelected ? category.color : "#8C8580",
           transition: "all 0.2s ease",
         }}
       >
@@ -49,26 +43,26 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect }) {
         )}
       </button>
 
-      {open && (
+      {isOpen && (
         <div style={{
           position: "absolute", bottom: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)",
-          background: "rgba(20,20,20,0.95)", backdropFilter: "blur(20px)",
+          background: "rgba(250,248,245,0.98)", backdropFilter: "blur(20px)",
           borderRadius: 18, padding: "10px 8px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
           display: "flex", gap: 4, zIndex: 100,
           border: `1.5px solid ${category.color}40`,
-          animation: "popIn 0.25s cubic-bezier(.4,0,.2,1)",
+          animation: "popIn 0.2s cubic-bezier(.4,0,.2,1)",
         }}>
           <div style={{
             position: "absolute", bottom: -8, left: "50%", transform: "translateX(-50%)",
-            width: 14, height: 14, background: "rgba(20,20,20,0.95)",
+            width: 14, height: 14, background: "rgba(250,248,245,0.98)",
             borderRight: `1.5px solid ${category.color}40`, borderBottom: `1.5px solid ${category.color}40`,
             rotate: "45deg",
           }} />
           {category.levels.map((emoji, i) => (
-            <button key={i} onClick={() => { onSelect(catKey, i, emoji); setOpen(false); }}
+            <button key={i} onClick={() => { onSelect(catKey, i, emoji); onToggle(null); }}
               style={{
-                background: isSelected && selected.level === i ? `${category.color}30` : "transparent",
+                background: isSelected && selected.level === i ? `${category.color}20` : "transparent",
                 border: isSelected && selected.level === i ? `2px solid ${category.color}` : "2px solid transparent",
                 borderRadius: 10, padding: "5px 7px", cursor: "pointer",
                 fontSize: 22 + i * 2, transition: "all 0.15s ease",
@@ -79,10 +73,10 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect }) {
           ))}
           <div style={{
             position: "absolute", top: -20, left: "50%", transform: "translateX(-50%)",
-            fontSize: 9, fontFamily: "'DM Mono', monospace", fontWeight: 500,
+            fontSize: 9, fontWeight: 500,
             color: category.color, whiteSpace: "nowrap", letterSpacing: 1,
           }}>
-            MILD → → → EXTREME
+            MILD → → → INTENSE
           </div>
         </div>
       )}
@@ -121,8 +115,8 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
       <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
         <div style={{
           width: depth > 0 ? 22 : 28, height: depth > 0 ? 22 : 28,
-          borderRadius: "50%", background: "rgba(193,71,111,0.15)",
-          border: "1.5px solid rgba(193,71,111,0.3)",
+          borderRadius: "50%", background: "rgba(193,71,111,0.12)",
+          border: "1.5px solid rgba(193,71,111,0.25)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: depth > 0 ? 11 : 14, flexShrink: 0, marginTop: 2,
         }}>
@@ -130,21 +124,21 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
-            background: depth > 0 ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.06)",
-            border: `1px solid rgba(255,255,255,${depth > 0 ? "0.05" : "0.08"})`,
+            background: depth > 0 ? "rgba(0,0,0,0.03)" : "#FFF",
+            border: `1px solid rgba(0,0,0,${depth > 0 ? "0.05" : "0.07"})`,
             borderRadius: "4px 14px 14px 14px", padding: "8px 12px",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>{comment.user}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#2D2A26" }}>{comment.user}</span>
               {comment.replyTo && (
                 <>
-                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>→</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(193,71,111,0.8)" }}>{comment.replyTo}</span>
+                  <span style={{ fontSize: 10, color: "rgba(0,0,0,0.2)" }}>→</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: "#C1476F" }}>{comment.replyTo}</span>
                 </>
               )}
-              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)" }}>• just now</span>
+              <span style={{ fontSize: 10, color: "#A09B94" }}>• just now</span>
             </div>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>
+            <div style={{ fontSize: 13, color: "#6B6560", lineHeight: 1.4 }}>
               {comment.text}
             </div>
           </div>
@@ -154,7 +148,7 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
               background: "none", border: "none", cursor: "pointer",
               display: "flex", alignItems: "center", gap: 4, padding: "2px 0",
               fontSize: 11, fontWeight: 600,
-              color: liked ? "#C1476F" : "rgba(255,255,255,0.3)",
+              color: liked ? "#C1476F" : "#A09B94",
             }}>
               <span style={{ fontSize: 13, transition: "transform 0.2s ease", transform: liked ? "scale(1.2)" : "scale(1)" }}>
                 {liked ? "❤️" : "🤍"}
@@ -165,8 +159,7 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
               <button onClick={() => setShowReplyInput(!showReplyInput)} style={{
                 background: "none", border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", gap: 4, padding: "2px 0",
-                fontSize: 11, fontWeight: 600,
-                color: "rgba(255,255,255,0.3)",
+                fontSize: 11, fontWeight: 600, color: "#A09B94",
               }}>
                 ↩ Reply
               </button>
@@ -180,17 +173,16 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
                 onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
                 placeholder={`Reply to ${comment.user}...`} autoFocus
                 style={{
-                  flex: 1, background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10,
+                  flex: 1, background: "#F7F5F0",
+                  border: "1.5px solid #E0DDD7", borderRadius: 10,
                   padding: "7px 10px", fontSize: 12,
-                  color: "#FFF", outline: "none",
+                  color: "#2D2A26", outline: "none",
                 }}
               />
               <button onClick={handleSendReply} style={{
                 background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
                 color: "#FFF", border: "none", borderRadius: 10,
-                padding: "7px 12px", fontSize: 12, fontWeight: 700,
-                cursor: "pointer",
+                padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer",
               }}>Send</button>
             </div>
           )}
@@ -202,7 +194,7 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
           {localReplies.length > 1 && !showReplies && (
             <button onClick={() => setShowReplies(true)} style={{
               background: "none", border: "none", cursor: "pointer",
-              fontSize: 11, fontWeight: 600, color: "rgba(193,71,111,0.8)",
+              fontSize: 11, fontWeight: 600, color: "#C1476F",
               padding: "4px 0 0 40px",
             }}>
               View {localReplies.length} replies ▾
@@ -220,12 +212,8 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
 }
 
 export default function ArtDetailPage({ params }) {
-  // In Next.js 16, params is a Promise — we unwrap it with use()
   const { id } = use(params);
 
-  // Start with hardcoded data, then try to fetch real data from the Met API.
-  // This pattern is called "optimistic UI" — show what you have immediately,
-  // then upgrade to better data when it arrives.
   const fallbackArtwork = getArtworkById(id) || ARTWORK_DETAIL;
   const [artwork, setArtwork] = useState(fallbackArtwork);
   const [loading, setLoading] = useState(true);
@@ -235,11 +223,7 @@ export default function ArtDetailPage({ params }) {
     async function loadArtwork() {
       const apiData = await fetchArtwork(id);
       if (!cancelled && apiData && apiData.image) {
-        // Merge API data with any hardcoded data we have (for reactions/comments)
-        setArtwork(prev => ({
-          ...prev,           // keep hardcoded reactions, comments, etc.
-          ...apiData,         // overwrite with real title, artist, image, etc.
-        }));
+        setArtwork(prev => ({ ...prev, ...apiData }));
       }
       if (!cancelled) setLoading(false);
     }
@@ -248,6 +232,7 @@ export default function ArtDetailPage({ params }) {
   }, [id]);
 
   const [selectedReaction, setSelectedReaction] = useState(null);
+  const [openCategory, setOpenCategory] = useState(null);
   const [comments, setComments] = useState(artwork.comments || []);
   const [newComment, setNewComment] = useState("");
   const [showCommentInput, setShowCommentInput] = useState(false);
@@ -274,7 +259,7 @@ export default function ArtDetailPage({ params }) {
   return (
     <div style={{
       width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh",
-      background: "#0A0A0A",
+      background: "#F7F5F0",
       position: "relative", overflow: "hidden", display: "flex", flexDirection: "column",
     }}>
       <style>{`
@@ -294,18 +279,18 @@ export default function ArtDetailPage({ params }) {
         alignItems: "center", flexShrink: 0, zIndex: 30,
       }}>
         <Link href="/" style={{
-          background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 12,
+          background: "rgba(0,0,0,0.07)", border: "none", borderRadius: 12,
           width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 18, cursor: "pointer", backdropFilter: "blur(10px)", textDecoration: "none",
+          fontSize: 18, cursor: "pointer", textDecoration: "none", color: "#2D2A26",
         }}>←</Link>
         <div style={{
-          fontFamily: "'DM Mono', monospace", fontSize: 13, fontWeight: 500,
-          color: "rgba(255,255,255,0.7)", letterSpacing: "0.06em", textTransform: "uppercase",
+          fontSize: 13, fontWeight: 600,
+          color: "#8C8580", letterSpacing: "0.06em", textTransform: "uppercase",
         }}>Artwork Details</div>
         <button style={{
-          background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 12,
+          background: "rgba(0,0,0,0.07)", border: "none", borderRadius: 12,
           width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 18, cursor: "pointer", backdropFilter: "blur(10px)",
+          fontSize: 18, cursor: "pointer",
         }}>↗</button>
       </div>
 
@@ -313,14 +298,14 @@ export default function ArtDetailPage({ params }) {
       <div className="hide-scrollbar" style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
 
         {/* Hero Image */}
-        <div style={{ width: "100%", height: 260, position: "relative", overflow: "hidden" }}>
+        <div style={{ width: "100%", height: 260, position: "relative", overflow: "hidden", background: "#E8E4DD" }}>
           <img src={artwork.image} alt={artwork.title}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
             onError={(e) => { e.target.style.display = "none"; }}
           />
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0, height: 80,
-            background: "linear-gradient(transparent, #0A0A0A)",
+            background: "linear-gradient(transparent, #F7F5F0)",
           }} />
         </div>
 
@@ -328,34 +313,30 @@ export default function ArtDetailPage({ params }) {
         <div style={{ padding: "0 20px", animation: "fadeUp 0.4s ease" }}>
           <h1 style={{
             fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700,
-            color: "#FFF", lineHeight: 1.2, marginBottom: 6,
+            color: "#2D2A26", lineHeight: 1.2, marginBottom: 6,
           }}>
             {artwork.title}
           </h1>
-          <div style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>
+          <div style={{ fontSize: 15, color: "#6B6560", marginBottom: 4 }}>
             {artwork.artist}, {artwork.year}
           </div>
           {artwork.gallery && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
-                padding: "5px 12px", background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12,
+                padding: "5px 12px", background: "rgba(0,0,0,0.05)",
+                border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12,
               }}>
                 <span style={{ fontSize: 12 }}>📍</span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>
-                  {artwork.gallery}
-                </span>
+                <span style={{ fontSize: 12, color: "#6B6560", fontWeight: 500 }}>{artwork.gallery}</span>
               </div>
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: 5,
-                padding: "5px 12px", background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12,
+                padding: "5px 12px", background: "rgba(0,0,0,0.05)",
+                border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12,
               }}>
                 <span style={{ fontSize: 12 }}>🖼️</span>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>
-                  {artwork.exhibition}
-                </span>
+                <span style={{ fontSize: 12, color: "#6B6560", fontWeight: 500 }}>{artwork.exhibition}</span>
               </div>
             </div>
           )}
@@ -368,17 +349,17 @@ export default function ArtDetailPage({ params }) {
               onClick={() => setShowAbout(!showAbout)}
               style={{
                 width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                background: "#EDEAE4", border: "1px solid rgba(0,0,0,0.07)",
                 borderRadius: showAbout ? "14px 14px 0 0" : 14, padding: "10px 14px",
                 cursor: "pointer", transition: "all 0.2s ease",
               }}
             >
               <span style={{
-                fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.4)",
+                fontSize: 12, fontWeight: 600, color: "#8C8580",
                 letterSpacing: "0.06em", textTransform: "uppercase",
               }}>About This Work</span>
               <span style={{
-                fontSize: 18, color: "rgba(255,255,255,0.35)",
+                fontSize: 18, color: "#A09B94",
                 transition: "transform 0.2s ease",
                 transform: showAbout ? "rotate(180deg)" : "rotate(0deg)",
                 lineHeight: 1,
@@ -388,25 +369,25 @@ export default function ArtDetailPage({ params }) {
             </button>
             {showAbout && (
               <div style={{
-                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                background: "#EDEAE4", border: "1px solid rgba(0,0,0,0.07)",
                 borderTop: "none", borderRadius: "0 0 14px 14px", padding: "12px 14px 14px",
                 animation: "fadeUp 0.25s ease",
               }}>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
+                <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.6 }}>
                   {artwork.description}
                 </p>
                 {artwork.medium && (
                   <div style={{
                     display: "flex", gap: 16, marginTop: 12, padding: "10px 0 0",
-                    borderTop: "1px solid rgba(255,255,255,0.06)",
+                    borderTop: "1px solid rgba(0,0,0,0.06)",
                   }}>
                     <div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Medium</div>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{artwork.medium}</div>
+                      <div style={{ fontSize: 10, color: "#A09B94", textTransform: "uppercase", letterSpacing: "0.05em" }}>Medium</div>
+                      <div style={{ fontSize: 12, color: "#6B6560", marginTop: 2 }}>{artwork.medium}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Dimensions</div>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>{artwork.dimensions}</div>
+                      <div style={{ fontSize: 10, color: "#A09B94", textTransform: "uppercase", letterSpacing: "0.05em" }}>Dimensions</div>
+                      <div style={{ fontSize: 12, color: "#6B6560", marginTop: 2 }}>{artwork.dimensions}</div>
                     </div>
                   </div>
                 )}
@@ -419,17 +400,17 @@ export default function ArtDetailPage({ params }) {
         {artwork.reactions && (
           <div style={{ padding: "16px 20px 0", animation: "fadeUp 0.4s ease 0.15s both" }}>
             <div style={{
-              fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.4)",
+              fontSize: 12, fontWeight: 600, color: "#8C8580",
               letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10,
             }}>Reactions ({(artwork.totalReactions || Object.values(artwork.reactions).reduce((a, b) => a + b, 0)).toLocaleString()})</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {Object.entries(artwork.reactions).map(([emoji, count], i) => (
                 <div key={i} style={{
                   display: "flex", alignItems: "center", gap: 4, padding: "5px 12px",
-                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16,
+                  background: "#FFF", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16,
                 }}>
                   <span style={{ fontSize: 16 }}>{emoji}</span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.5)" }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#6B6560" }}>
                     {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}
                   </span>
                 </div>
@@ -441,20 +422,26 @@ export default function ArtDetailPage({ params }) {
         {/* Your Reaction — Emoji Intensity Picker */}
         <div style={{ padding: "20px 20px 0", animation: "fadeUp 0.4s ease 0.2s both" }}>
           <div style={{
-            fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.4)",
+            fontSize: 12, fontWeight: 600, color: "#8C8580",
             letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10,
           }}>How Does This Make You Feel?</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Object.entries(EMOJI_CATEGORIES).map(([key, cat]) => (
-              <EmojiIntensityPicker key={key} catKey={key} category={cat}
-                selected={selectedReaction} onSelect={handleEmojiSelect}
+              <EmojiIntensityPicker
+                key={key}
+                catKey={key}
+                category={cat}
+                selected={selectedReaction}
+                onSelect={handleEmojiSelect}
+                openCategory={openCategory}
+                onToggle={setOpenCategory}
               />
             ))}
           </div>
           {selectedReaction && (
             <div style={{
               marginTop: 12, padding: "10px 14px",
-              background: `${EMOJI_CATEGORIES[selectedReaction.category].color}15`,
+              background: `${EMOJI_CATEGORIES[selectedReaction.category].color}12`,
               border: `1px solid ${EMOJI_CATEGORIES[selectedReaction.category].color}30`,
               borderRadius: 14, display: "flex", alignItems: "center", gap: 8,
               animation: "fadeUp 0.3s ease",
@@ -464,8 +451,8 @@ export default function ArtDetailPage({ params }) {
                 <div style={{ fontSize: 13, fontWeight: 700, color: EMOJI_CATEGORIES[selectedReaction.category].color }}>
                   {EMOJI_CATEGORIES[selectedReaction.category].label} — Level {selectedReaction.level + 1}
                 </div>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
-                  Tap another emoji to change your reaction
+                <div style={{ fontSize: 11, color: "#A09B94" }}>
+                  Tap another category to change your reaction
                 </div>
               </div>
             </div>
@@ -479,13 +466,13 @@ export default function ArtDetailPage({ params }) {
               display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
             }}>
               <span style={{
-                fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.4)",
+                fontSize: 12, fontWeight: 600, color: "#8C8580",
                 letterSpacing: "0.06em", textTransform: "uppercase",
               }}>💬 Comments ({comments.length})</span>
               {comments.length > 3 && (
                 <button onClick={() => setShowAllComments(!showAllComments)} style={{
                   background: "none", border: "none", fontSize: 11, fontWeight: 600,
-                  color: "rgba(193,71,111,0.8)", cursor: "pointer",
+                  color: "#C1476F", cursor: "pointer",
                 }}>
                   {showAllComments ? "Show less" : `View all ${comments.length}`}
                 </button>
@@ -505,25 +492,24 @@ export default function ArtDetailPage({ params }) {
                     onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
                     placeholder="Share your thoughts..." autoFocus
                     style={{
-                      flex: 1, background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12,
+                      flex: 1, background: "#FFF",
+                      border: "1.5px solid #E0DDD7", borderRadius: 12,
                       padding: "10px 14px", fontSize: 13,
-                      color: "#FFF", outline: "none",
+                      color: "#2D2A26", outline: "none",
                     }}
                   />
                   <button onClick={handleAddComment} style={{
                     background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
                     color: "#FFF", border: "none", borderRadius: 12,
-                    padding: "10px 16px", fontSize: 13, fontWeight: 700,
-                    cursor: "pointer",
+                    padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer",
                   }}>Send</button>
                 </div>
               </div>
             ) : (
               <button onClick={() => setShowCommentInput(true)} style={{
                 width: "100%", marginTop: 12, padding: "10px 14px",
-                background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.12)",
-                borderRadius: 12, fontSize: 12, color: "rgba(255,255,255,0.35)",
+                background: "#FFF", border: "1.5px dashed #D9D5CE",
+                borderRadius: 12, fontSize: 12, color: "#A09B94",
                 cursor: "pointer", fontWeight: 500,
               }}>
                 💬 Add a comment...
@@ -538,53 +524,52 @@ export default function ArtDetailPage({ params }) {
             padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
           }}>
             <span style={{
-              fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.4)",
+              fontSize: 12, fontWeight: 600, color: "#8C8580",
               letterSpacing: "0.06em", textTransform: "uppercase",
             }}>Also in {artwork.exhibition || "The Met"}</span>
-            <span style={{ fontSize: 11, color: "rgba(193,71,111,0.8)", fontWeight: 500, cursor: "pointer" }}>
+            <span style={{ fontSize: 11, color: "#C1476F", fontWeight: 500, cursor: "pointer" }}>
               View all →
             </span>
           </div>
           <div className="hide-scrollbar" style={{
-            display: "flex", gap: 10, overflowX: "auto",
-            padding: "0 20px 4px",
+            display: "flex", gap: 10, overflowX: "auto", padding: "0 20px 4px",
           }}>
             {RELATED_ARTWORKS.map((art, i) => (
               <Link key={i} href={`/artwork/${art.id}`} style={{ textDecoration: "none" }}>
                 <div style={{
-                  flexShrink: 0, width: 150, background: "rgba(15,15,15,0.75)",
-                  backdropFilter: "blur(20px)", borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden",
-                  cursor: "pointer", transition: "transform 0.2s ease",
+                  flexShrink: 0, width: 150, background: "#FFF",
+                  borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)",
+                  overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease",
                   animation: `fadeUp 0.4s ease ${0.35 + i * 0.08}s backwards`,
+                  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
                 }}>
-                  <div style={{ width: "100%", height: 105, overflow: "hidden", position: "relative", background: "#1a1a1a" }}>
+                  <div style={{ width: "100%", height: 105, overflow: "hidden", position: "relative", background: "#E8E4DD" }}>
                     <img src={art.image} alt={art.title}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       onError={(e) => { e.target.style.display = "none"; }}
                     />
                     <div style={{
                       position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: 8,
-                      background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)",
+                      background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)",
                       display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
                     }}>{art.topEmoji}</div>
                   </div>
                   <div style={{ padding: "8px 10px 10px" }}>
                     <div style={{
-                      fontSize: 12, fontWeight: 600, color: "#FFF", lineHeight: 1.3,
+                      fontSize: 12, fontWeight: 600, color: "#2D2A26", lineHeight: 1.3,
                       display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
                       overflow: "hidden", marginBottom: 3,
                     }}>{art.title}</div>
                     <div style={{
-                      fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 6,
+                      fontSize: 10, color: "#8C8580", marginBottom: 6,
                       whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                     }}>{art.artist}, {art.year}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <span style={{ fontSize: 11 }}>{art.topEmoji}</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.35)" }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, color: "#8C8580" }}>
                         {art.reactions >= 1000 ? `${(art.reactions / 1000).toFixed(1)}k` : art.reactions}
                       </span>
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)", marginLeft: 2 }}>reactions</span>
+                      <span style={{ fontSize: 10, color: "#A09B94", marginLeft: 2 }}>reactions</span>
                     </div>
                   </div>
                 </div>
@@ -594,8 +579,7 @@ export default function ArtDetailPage({ params }) {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <BottomNav variant="dark" />
+      <BottomNav variant="light" />
     </div>
   );
 }
