@@ -57,3 +57,16 @@ export function getBio() {
 export function setBio(text) {
   localStorage.setItem("moji-bio", text);
 }
+
+// Get the user's saved favorites — array of { type: "artwork"|"category", id: string }
+export function getFavorites() {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem("moji-favorites") || "[]");
+  } catch { return []; }
+}
+
+// Save the user's favorites list
+export function saveFavorites(list) {
+  localStorage.setItem("moji-favorites", JSON.stringify(list));
+}
