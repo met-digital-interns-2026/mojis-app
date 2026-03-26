@@ -5,23 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import { getGuestId, getGuestName, setUsername, getAvatar, setAvatar, getBio, setBio, getFavorites, saveFavorites } from "../lib/guest";
-import { FEATURED_ARTWORKS, CATEGORIES } from "../data/artworks";
+import { FEATURED_ARTWORKS } from "../data/artworks";
 
 const BIO_LIMIT = 150;
 
 function isImageUrl(value) {
   return typeof value === "string" && value.startsWith("http");
 }
-
-// Stable IDs for categories (use the label slug)
-const CATEGORY_OPTIONS = CATEGORIES.map(cat => ({
-  id: cat.label.toLowerCase().replace(/\s+/g, "-"),
-  label: cat.label,
-  emoji: cat.emoji,
-  color: cat.color,
-  bgGrad: cat.bgGrad,
-  image: cat.artwork.image,
-}));
 
 function AvatarDisplay({ value, size = 88, editing = false, onClick }) {
   return (
@@ -52,50 +42,29 @@ function AvatarDisplay({ value, size = 88, editing = false, onClick }) {
 
 // One card in the favorites display row
 function FavoriteCard({ fav, editing, onRemove }) {
-  const artwork = fav.type === "artwork"
-    ? FEATURED_ARTWORKS.find(a => a.id === fav.id)
-    : null;
-  const category = fav.type === "category"
-    ? CATEGORY_OPTIONS.find(c => c.id === fav.id)
-    : null;
-  const item = artwork || category;
+  const item = FEATURED_ARTWORKS.find(a => a.id === fav.id);
   if (!item) return null;
 
   return (
     <div style={{ position: "relative", flexShrink: 0 }}>
-      {fav.type === "artwork" ? (
-        <Link href={`/artwork/${item.id}`} style={{ textDecoration: "none" }}>
-          <div style={{
-            width: 90, borderRadius: 14, overflow: "hidden",
-            background: "#FFF", border: "1px solid rgba(0,0,0,0.08)",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-          }}>
-            <div style={{ height: 72, overflow: "hidden", background: "#E8E4DD" }}>
-              <Image src={item.image} alt={item.title} width={90} height={72}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
-            </div>
-            <div style={{ padding: "6px 7px 7px" }}>
-              <div style={{
-                fontSize: 10, fontWeight: 600, color: "#2D2A26", lineHeight: 1.3,
-                display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-              }}>{item.title}</div>
-            </div>
-          </div>
-        </Link>
-      ) : (
+      <Link href={`/artwork/${item.id}`} style={{ textDecoration: "none" }}>
         <div style={{
           width: 90, borderRadius: 14, overflow: "hidden",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+          background: "#FFF", border: "1px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         }}>
-          <div style={{
-            height: 72, background: item.bgGrad,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30,
-          }}>{item.emoji}</div>
-          <div style={{ padding: "6px 7px 7px", background: "#FFF", border: "1px solid rgba(0,0,0,0.08)", borderTop: "none", borderRadius: "0 0 14px 14px" }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: "#2D2A26", lineHeight: 1.3 }}>{item.label}</div>
+          <div style={{ height: 72, overflow: "hidden", background: "#E8E4DD" }}>
+            <Image src={item.image} alt={item.title} width={90} height={72}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
+          </div>
+          <div style={{ padding: "6px 7px 7px" }}>
+            <div style={{
+              fontSize: 10, fontWeight: 600, color: "#2D2A26", lineHeight: 1.3,
+              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+            }}>{item.title}</div>
           </div>
         </div>
-      )}
+      </Link>
       {editing && (
         <button
           onClick={() => onRemove(fav)}
@@ -112,19 +81,18 @@ function FavoriteCard({ fav, editing, onRemove }) {
   );
 }
 
-// Picker shown while editing — toggle artworks and categories
+// Picker shown while editing — toggle artworks
 function FavoritesPicker({ favorites, onToggle }) {
-  const isSelected = (type, id) => favorites.some(f => f.type === type && f.id === id);
+  const isSelected = (id) => favorites.some(f => f.type === "artwork" && f.id === id);
 
   return (
     <div style={{ animation: "pop 0.2s ease both" }}>
-      {/* Artworks */}
       <p style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
         Artworks
       </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
         {FEATURED_ARTWORKS.map(art => {
-          const selected = isSelected("artwork", art.id);
+          const selected = isSelected(art.id);
           return (
             <div key={art.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <div
@@ -152,46 +120,6 @@ function FavoritesPicker({ favorites, onToggle }) {
                 maxWidth: 52, overflow: "hidden",
                 display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
               }}>{art.title}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Categories */}
-      <p style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-        Categories
-      </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-        {CATEGORY_OPTIONS.map(cat => {
-          const selected = isSelected("category", cat.id);
-          return (
-            <div key={cat.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <div
-                onClick={() => onToggle("category", cat.id)}
-                style={{
-                  width: 48, height: 48, borderRadius: "50%",
-                  background: cat.bgGrad, cursor: "pointer",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 22, position: "relative",
-                  outline: selected ? "3px solid #C1476F" : "none",
-                  outlineOffset: 2,
-                  transition: "transform 0.15s ease",
-                }}
-              >
-                {cat.emoji}
-                {selected && (
-                  <div style={{
-                    position: "absolute", inset: 0, borderRadius: "50%",
-                    background: "rgba(193,71,111,0.35)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 16, color: "#FFF",
-                  }}>✓</div>
-                )}
-              </div>
-              <span style={{
-                fontSize: 9, color: "#A09B94", textAlign: "center",
-                lineHeight: 1.2, maxWidth: 52,
-              }}>{cat.label}</span>
             </div>
           );
         })}

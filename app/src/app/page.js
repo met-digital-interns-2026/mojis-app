@@ -39,9 +39,6 @@ export default function HomePage() {
     };
   }, []);
 
-  // Stable category IDs — must match CATEGORY_OPTIONS in profile/page.js
-  const categoryId = (cat) => cat.label.toLowerCase().replace(/\s+/g, "-");
-
   return (
     <div
       className="responsive-page"
@@ -239,12 +236,9 @@ export default function HomePage() {
                     <div style={{ fontSize: 12, color: "#8C8580" }}>{cat.count.toLocaleString()} reactions</div>
                   </div>
                 </div>
-                {/* Exhibition badge + category bookmark */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ padding: "4px 10px", borderRadius: 20, background: "#F2EFE9", fontSize: 11, fontWeight: 500, color: "#6B6560" }}>
-                    {cat.exhibition}
-                  </div>
-                  <BookmarkButton type="category" id={categoryId(cat)} size={32} />
+                {/* Exhibition badge */}
+                <div style={{ padding: "4px 10px", borderRadius: 20, background: "#F2EFE9", fontSize: 11, fontWeight: 500, color: "#6B6560" }}>
+                  {cat.exhibition}
                 </div>
               </div>
 
