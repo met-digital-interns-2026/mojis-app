@@ -4,17 +4,21 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import BottomNav from "./components/BottomNav";
 import CommentsSection from "./components/CommentsSection";
 import { CATEGORIES, TRENDING } from "./data/artworks";
+import { getAvatar } from "./lib/guest";
 
 export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
   const [expandedCard, setExpandedCard] = useState(null);
   const [headerScrolled, setHeaderScrolled] = useState(false);
+  const [avatar, setAvatar] = useState("👤");
 
   useEffect(() => {
     setLoaded(true);
+    setAvatar(getAvatar());
     const handleScroll = (e) => {
       setHeaderScrolled(e.target.scrollTop > 40);
     };
@@ -104,19 +108,32 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        <div style={{
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          background: "#EDEAE4",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 18,
-          cursor: "pointer",
-        }}>
-          👤
-        </div>
+        <Link href="/profile" style={{ textDecoration: "none" }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            background: "#EDEAE4",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            cursor: "pointer",
+            flexShrink: 0,
+          }}>
+            {avatar.startsWith("http") ? (
+              <Image
+                src={avatar}
+                alt="avatar"
+                width={36}
+                height={36}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                unoptimized
+              />
+            ) : avatar}
+          </div>
+        </Link>
       </div>
 
       {/* Scrollable Content */}
