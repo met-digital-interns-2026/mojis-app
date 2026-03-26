@@ -38,10 +38,7 @@ export default function ScanPage() {
   };
 
   return (
-    <div style={{
-      width: "100%",
-      maxWidth: 420,
-      margin: "0 auto",
+    <div className="responsive-page" style={{
       height: "100vh",
       background: "#0A0A0A",
       position: "relative",

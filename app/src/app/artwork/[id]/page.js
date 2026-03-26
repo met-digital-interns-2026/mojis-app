@@ -4,6 +4,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import BottomNav from "../../components/BottomNav";
+import BookmarkButton from "../../components/BookmarkButton";
 import { ARTWORK_DETAIL, EMOJI_CATEGORIES, RELATED_ARTWORKS, getArtworkById } from "../../data/artworks";
 import { fetchArtwork } from "../../lib/met-api";
 
@@ -257,8 +258,8 @@ export default function ArtDetailPage({ params }) {
   };
 
   return (
-    <div style={{
-      width: "100%", maxWidth: 420, margin: "0 auto", height: "100vh",
+    <div className="responsive-page" style={{
+      height: "100vh",
       background: "#F7F5F0",
       position: "relative", overflow: "hidden", display: "flex", flexDirection: "column",
     }}>
@@ -287,11 +288,7 @@ export default function ArtDetailPage({ params }) {
           fontSize: 13, fontWeight: 600,
           color: "#8C8580", letterSpacing: "0.06em", textTransform: "uppercase",
         }}>Artwork Details</div>
-        <button style={{
-          background: "rgba(0,0,0,0.07)", border: "none", borderRadius: 12,
-          width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 18, cursor: "pointer",
-        }}>↗</button>
+        <BookmarkButton type="artwork" id={artwork.id} size={40} />
       </div>
 
       {/* Scrollable Content */}

@@ -276,8 +276,7 @@ export default function ProfilePage() {
   const displayFavorites = editing ? draftFavorites : favorites;
 
   return (
-    <div style={{
-      width: "100%", maxWidth: 420, margin: "0 auto",
+    <div className="responsive-page" style={{
       minHeight: "100vh", background: "#F7F5F0",
       display: "flex", flexDirection: "column",
     }}>

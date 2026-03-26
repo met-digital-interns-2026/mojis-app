@@ -1,5 +1,4 @@
 // "use client" tells Next.js: this component runs in the browser (not on the server).
-// We need it here because we use Link for navigation and track which tab is active.
 "use client";
 
 import Link from "next/link";
@@ -8,35 +7,120 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getAvatar } from "../lib/guest";
 
-// The tabs array defines our 5 navigation buttons.
-// "href" is the URL each button links to.
 const TABS = [
-  { icon: "🏠", label: "Home", id: "home", href: "/" },
-  { icon: "🗺️", label: "Gallery", id: "gallery", href: "#" },
-  { icon: "📸", label: "Scan", id: "scan", href: "/scan", special: true },
+  { icon: "🏠", label: "Home",     id: "home",     href: "/" },
+  { icon: "🗺️", label: "Gallery",  id: "gallery",  href: "#" },
+  { icon: "📸", label: "Scan",     id: "scan",     href: "/scan", special: true },
   { icon: "🏆", label: "Rankings", id: "rankings", href: "#" },
-  { icon: "👤", label: "Profile", id: "profile", href: "/profile" },
+  { icon: "👤", label: "Profile",  id: "profile",  href: "/profile" },
 ];
 
-// This component is used on every page. It figures out which tab is active
-// by looking at the current URL (usePathname gives us the current path).
 export default function BottomNav({ variant = "light" }) {
   const pathname = usePathname();
   const [profileAvatar, setProfileAvatar] = useState("👤");
+  const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
     setProfileAvatar(getAvatar());
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Figure out which tab matches the current page
-  const activeTab = pathname === "/" ? "home"
-    : pathname.startsWith("/scan") ? "scan"
-    : pathname.startsWith("/artwork") ? "home"
-    : pathname.startsWith("/profile") ? "profile"
+  const activeTab = pathname === "/"           ? "home"
+    : pathname.startsWith("/scan")             ? "scan"
+    : pathname.startsWith("/artwork")          ? "home"
+    : pathname.startsWith("/profile")          ? "profile"
     : "home";
 
-  // Dark variant for scan and artwork detail pages, light for homepage
-  const isDark = variant === "dark";
+  const isDark = variant === "dark" && !isDesktop;
+
+  // ── Desktop: left sidebar ────────────────────────────────────────────────
+  if (isDesktop) {
+    return (
+      <div style={{
+        position: "fixed",
+        left: 0,
+        top: 0,
+        width: 220,
+        height: "100vh",
+        background: "rgba(247,245,240,0.97)",
+        backdropFilter: "blur(20px)",
+        borderRight: "1px solid rgba(0,0,0,0.07)",
+        display: "flex",
+        flexDirection: "column",
+        zIndex: 20,
+      }}>
+        {/* Logo */}
+        <div style={{ padding: "28px 20px 20px", display: "flex", alignItems: "center", gap: 10, borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: "linear-gradient(135deg, #2D2A26 0%, #5C574E 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0,
+          }}>🏛️</div>
+          <div>
+            <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: "#2D2A26", lineHeight: 1.1 }}>
+              Moji Museum
+            </div>
+            <div style={{ fontSize: 10, color: "#8C8580" }}>The Met</div>
+          </div>
+        </div>
+
+        {/* Nav items */}
+        <div style={{ flex: 1, padding: "16px 12px", display: "flex", flexDirection: "column", gap: 2 }}>
+          {TABS.map(tab => {
+            const isActive = activeTab === tab.id;
+            const icon = tab.id === "profile"
+              ? (profileAvatar.startsWith("http")
+                  ? <div style={{ width: 22, height: 22, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+                      <Image src={profileAvatar} alt="avatar" width={22} height={22}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
+                    </div>
+                  : <span style={{ fontSize: 20, lineHeight: 1 }}>{profileAvatar}</span>
+                )
+              : <span style={{ fontSize: 20, lineHeight: 1 }}>{tab.icon}</span>;
+
+            if (tab.special) {
+              return (
+                <Link key={tab.id} href={tab.href} style={{ textDecoration: "none" }}>
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                    borderRadius: 14, cursor: "pointer",
+                    background: isActive
+                      ? "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)"
+                      : "rgba(193,71,111,0.08)",
+                    transition: "background 0.15s",
+                  }}>
+                    {icon}
+                    <span style={{ fontSize: 14, fontWeight: 600, color: isActive ? "#FFF" : "#C1476F" }}>{tab.label}</span>
+                  </div>
+                </Link>
+              );
+            }
+
+            return (
+              <Link key={tab.id} href={tab.href} style={{ textDecoration: "none" }}>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                  borderRadius: 14, cursor: "pointer",
+                  background: isActive ? "rgba(45,42,38,0.07)" : "transparent",
+                  transition: "background 0.15s",
+                }}>
+                  <span style={{ opacity: isActive ? 1 : 0.45 }}>{icon}</span>
+                  <span style={{ fontSize: 14, fontWeight: isActive ? 600 : 400, color: isActive ? "#2D2A26" : "#8C8580" }}>
+                    {tab.label}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Mobile / tablet: bottom bar ──────────────────────────────────────────
   const bgColor = isDark ? "rgba(10,10,10,0.92)" : "rgba(247,245,240,0.92)";
   const borderColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
   const activeTextColor = isDark ? "#FFF" : "#2D2A26";
@@ -49,7 +133,7 @@ export default function BottomNav({ variant = "light" }) {
       left: "50%",
       transform: "translateX(-50%)",
       width: "100%",
-      maxWidth: 420,
+      maxWidth: 680,
       height: 80,
       background: bgColor,
       backdropFilter: "blur(20px)",
@@ -60,62 +144,30 @@ export default function BottomNav({ variant = "light" }) {
       paddingTop: 8,
       zIndex: 20,
     }}>
-      {TABS.map((tab) => (
-        <Link
-          key={tab.id}
-          href={tab.href}
-          style={{
-            textDecoration: "none",
-            background: "none",
-            border: "none",
-            padding: "8px 0",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 3,
-            cursor: "pointer",
-          }}
-        >
+      {TABS.map(tab => (
+        <Link key={tab.id} href={tab.href} style={{
+          textDecoration: "none", background: "none", border: "none",
+          padding: "8px 0", display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 3, cursor: "pointer",
+        }}>
           {tab.special ? (
             <div style={{
-              width: 48,
-              height: 48,
-              borderRadius: 16,
+              width: 48, height: 48, borderRadius: 16,
               background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-              marginTop: -20,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 22, marginTop: -20,
               boxShadow: "0 4px 16px rgba(193,71,111,0.35)",
-            }}>
-              {tab.icon}
-            </div>
+            }}>{tab.icon}</div>
           ) : tab.id === "profile" && profileAvatar.startsWith("http") ? (
             <div style={{
-              width: 26,
-              height: 26,
-              borderRadius: "50%",
-              overflow: "hidden",
-              opacity: activeTab === tab.id ? 1 : 0.45,
-              transition: "opacity 0.2s",
-              flexShrink: 0,
+              width: 26, height: 26, borderRadius: "50%", overflow: "hidden",
+              opacity: activeTab === tab.id ? 1 : 0.45, transition: "opacity 0.2s", flexShrink: 0,
             }}>
-              <Image
-                src={profileAvatar}
-                alt="avatar"
-                width={26}
-                height={26}
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                unoptimized
-              />
+              <Image src={profileAvatar} alt="avatar" width={26} height={26}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
             </div>
           ) : (
-            <span style={{
-              fontSize: 22,
-              opacity: activeTab === tab.id ? 1 : 0.45,
-              transition: "opacity 0.2s",
-            }}>
+            <span style={{ fontSize: 22, opacity: activeTab === tab.id ? 1 : 0.45, transition: "opacity 0.2s" }}>
               {tab.id === "profile" ? profileAvatar : tab.icon}
             </span>
           )}
@@ -124,9 +176,7 @@ export default function BottomNav({ variant = "light" }) {
             fontWeight: activeTab === tab.id ? 600 : 400,
             color: activeTab === tab.id ? activeTextColor : inactiveTextColor,
             marginTop: tab.special ? -2 : 0,
-          }}>
-            {tab.label}
-          </span>
+          }}>{tab.label}</span>
         </Link>
       ))}
     </div>
