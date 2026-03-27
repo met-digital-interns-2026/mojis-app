@@ -10,6 +10,7 @@ app/                          # Next.js application (all code lives here)
 │   ├── page.js               # Homepage — trending artworks, category cards, comments
 │   ├── scan/page.js           # Camera scan — capture photo → identify artwork via image similarity
 │   ├── artwork/[id]/page.js   # Artwork detail — full info, emoji intensity reactions, comments
+│   ├── gallery/page.js        # Gallery — browse all discovered artworks, filter by department
 │   ├── rankings/page.js       # Leaderboard — most reacted/saved/commented artworks
 │   ├── profile/page.js        # User profile — avatar, bio, favorites
 │   ├── api/scan/route.js      # Server-side proxy for image similarity API (keeps secret off client)
@@ -96,6 +97,7 @@ All pages try to load from the database first, then fall back to the hardcoded d
 
 - `getArtwork(id)` — single artwork lookup
 - `getTopByCategory()` — homepage: top-reacted artwork per emotion category
+- `getAllArtworks(department?)` — gallery: all discovered artworks, optionally filtered by department
 - `getArtworkRankings()` — rankings: artworks sorted by total reaction count
 - `getCommentHeartRankings()` — rankings: artworks sorted by comment like count
 - `getReactionCounts(id)` / `getMyReaction(id, guestId)` / `saveReaction(...)` — reaction CRUD

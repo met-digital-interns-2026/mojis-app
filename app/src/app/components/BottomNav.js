@@ -9,7 +9,7 @@ import { getAvatar } from "../lib/guest";
 
 const TABS = [
   { icon: "🏠", label: "Home",     id: "home",     href: "/" },
-  { icon: "🗺️", label: "Gallery",  id: "gallery",  href: "#" },
+  { icon: "🗺️", label: "Gallery",  id: "gallery",  href: "/gallery" },
   { icon: "📸", label: "Scan",     id: "scan",     href: "/scan", special: true },
   { icon: "🏆", label: "Rankings", id: "rankings", href: "/rankings" },
   { icon: "👤", label: "Profile",  id: "profile",  href: "/profile" },
@@ -29,6 +29,7 @@ export default function BottomNav({ variant = "light" }) {
   }, []);
 
   const activeTab = pathname === "/"           ? "home"
+    : pathname.startsWith("/gallery")          ? "gallery"
     : pathname.startsWith("/scan")             ? "scan"
     : pathname.startsWith("/artwork")          ? "home"
     : pathname.startsWith("/profile")          ? "profile"

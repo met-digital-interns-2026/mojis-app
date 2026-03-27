@@ -329,6 +329,54 @@ export async function getTopByCategory() {
   return result;
 }
 
+// Get all artworks from the database, optionally filtered by department.
+// Returns each artwork with its total reaction count and top emoji.
+// Used by the gallery page.
+export async function getAllArtworks(department = null) {
+  if (!isConnected()) return null;
+
+  let query = supabase.from("artworks").select("*");
+  if (department) {
+    query = query.eq("department", department);
+  }
+  const { data: artworks, error } = await query.order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching all artworks:", error);
+    return null;
+  }
+
+  if (!artworks || artworks.length === 0) return [];
+
+  // Get reaction counts and top emoji per artwork
+  const artworkIds = artworks.map(a => a.id);
+  const { data: reactions } = await supabase
+    .from("reactions")
+    .select("artwork_id, emoji")
+    .in("artwork_id", artworkIds);
+
+  const stats = {};
+  if (reactions) {
+    for (const r of reactions) {
+      if (!stats[r.artwork_id]) stats[r.artwork_id] = { count: 0, emojis: {} };
+      stats[r.artwork_id].count++;
+      stats[r.artwork_id].emojis[r.emoji] = (stats[r.artwork_id].emojis[r.emoji] || 0) + 1;
+    }
+  }
+
+  return artworks.map(art => {
+    const s = stats[art.id];
+    const topEmoji = s
+      ? Object.entries(s.emojis).sort(([, a], [, b]) => b - a)[0]?.[0] || null
+      : null;
+    return {
+      ...art,
+      reaction_count: s?.count || 0,
+      topEmoji,
+    };
+  });
+}
+
 // Ensure an artwork exists in the artworks table.
 // Called when we discover a new artwork (e.g. from image recognition scan).
 export async function upsertArtwork(artwork) {
