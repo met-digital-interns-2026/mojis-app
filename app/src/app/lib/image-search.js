@@ -4,11 +4,8 @@
 // You take a photo of an artwork → send it to this API → get back matches
 // ranked by visual similarity (powered by Elasticsearch kNN vector search).
 //
-// The API lives on a Vercel preview deployment and requires a bypass header
-// for authentication (set via NEXT_PUBLIC_IMAGE_SEARCH_BYPASS_SECRET).
-
-const IMAGE_SEARCH_URL =
-  "https://staging-and-preview-web-git-semantic-search-the-met.vercel.app/api/search/image-similarity";
+// The actual API call goes through our own /api/scan route, which adds
+// the bypass secret server-side so it's never exposed to the browser.
 
 /**
  * Search for visually similar artworks by uploading an image.
@@ -19,8 +16,6 @@ const IMAGE_SEARCH_URL =
  * @returns {Promise<Array>} Top matching artworks, each with score + metadata
  */
 export async function searchByImage(imageFile, options = {}) {
-  const bypassSecret = process.env.NEXT_PUBLIC_IMAGE_SEARCH_BYPASS_SECRET;
-
   const formData = new FormData();
   formData.append("image", imageFile);
 
@@ -28,15 +23,10 @@ export async function searchByImage(imageFile, options = {}) {
     formData.append("embeddingModel", options.embeddingModel);
   }
 
-  const headers = {};
-  if (bypassSecret) {
-    headers["x-vercel-protection-bypass"] = bypassSecret;
-  }
-
-  const res = await fetch(IMAGE_SEARCH_URL, {
+  // Call our own server-side proxy (keeps the bypass secret off the client)
+  const res = await fetch("/api/scan", {
     method: "POST",
     body: formData,
-    headers,
     // Do NOT set Content-Type — the browser sets the multipart boundary automatically
   });
 
