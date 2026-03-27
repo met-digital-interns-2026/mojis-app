@@ -82,7 +82,7 @@ Four tables in Supabase (see `supabase/schema.sql`):
 - **comments** — artwork_id (FK→artworks), guest_id, guest_name, emoji, text, parent_id (for replies)
 - **comment_likes** — comment_id (FK→comments), guest_id (unique per guest+comment)
 
-All tables have RLS enabled: anyone can read, anyone can insert, users can only update/delete their own rows.
+All tables have RLS enabled: anyone can read, anyone can insert. Artworks and reactions allow updates (needed for upsert). Comment likes allow deletes (for unliking). **Important**: Supabase `upsert` requires both INSERT and UPDATE RLS policies — missing the UPDATE policy causes silent failures.
 
 ### Setting up the database
 
