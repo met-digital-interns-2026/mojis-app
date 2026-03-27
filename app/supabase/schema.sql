@@ -109,6 +109,9 @@ CREATE POLICY "Anyone can insert reactions" ON reactions FOR INSERT WITH CHECK (
 CREATE POLICY "Anyone can insert comments" ON comments FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can insert likes" ON comment_likes FOR INSERT WITH CHECK (true);
 
+-- Anyone can update artworks (upsert needs both INSERT and UPDATE)
+CREATE POLICY "Anyone can update artworks" ON artworks FOR UPDATE USING (true);
+
 -- Users can update their own reactions (change emoji)
 CREATE POLICY "Users can update own reactions" ON reactions FOR UPDATE USING (true);
 

@@ -238,7 +238,7 @@ export default function ArtDetailPage({ params }) {
 
       // Also try the Met API for extra fields (dimensions, description, etc.)
       const apiData = await fetchArtwork(id);
-      if (!cancelled && apiData && apiData.image) {
+      if (!cancelled && apiData) {
         setArtwork(prev => ({ ...prev, ...apiData }));
 
         // If this artwork isn't in the DB yet, insert it so reactions/comments work
