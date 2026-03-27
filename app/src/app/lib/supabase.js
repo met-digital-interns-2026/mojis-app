@@ -15,7 +15,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // If the environment variables aren't set yet, we'll work in "offline mode"
-// (using the hardcoded data from data/artworks.js instead)
+// (pages will show empty states until Supabase is configured)
 export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;

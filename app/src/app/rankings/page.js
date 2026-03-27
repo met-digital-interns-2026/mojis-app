@@ -7,7 +7,7 @@ import BottomNav from "../components/BottomNav";
 import BookmarkButton from "../components/BookmarkButton";
 import { getArtworkRankings, getCommentHeartRankings } from "../lib/db";
 
-const TABS = ["🔥 Most Reacted", "🔖 Most Saved", "💬 Most Commented"];
+const TABS = ["🔥 Most Reacted", "💬 Most Commented"];
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const MEDAL_COLORS = ["#F5A623", "#9BA3AF", "#CD7F32"];
@@ -47,9 +47,9 @@ export default function RankingsPage() {
     load();
   }, []);
 
-  const data = activeTab === 2 ? commentedData : reactedData;
-  const metricLabel = activeTab === 2 ? "comment hearts" : "reactions";
-  const metricIcon = activeTab === 2 ? "❤️" : null;
+  const data = activeTab === 1 ? commentedData : reactedData;
+  const metricLabel = activeTab === 1 ? "comment hearts" : "reactions";
+  const metricIcon = activeTab === 1 ? "❤️" : null;
   const [top1, top2, top3, ...rest] = data;
 
   return (

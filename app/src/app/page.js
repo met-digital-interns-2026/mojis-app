@@ -161,7 +161,7 @@ export default function HomePage() {
                 Moji Museum
               </div>
               <div style={{ fontSize: 11, color: "#8C8580", fontWeight: 400, letterSpacing: "0.02em" }}>
-                The Met — 847 visitors reacting now
+                The Met
               </div>
             </div>
           </div>

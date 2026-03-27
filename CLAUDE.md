@@ -22,7 +22,7 @@ app/                          # Next.js application (all code lives here)
 │   │   ├── db.js              # Database functions (reactions, comments, likes, rankings, artworks)
 │   │   ├── auth.js            # Auth helpers (signUp, signIn, signOut)
 │   │   └── guest.js           # Guest identity via localStorage
-│   └── data/artworks.js       # Hardcoded artwork data (fallback when DB not connected)
+│   └── data/artworks.js       # EMOJI_CATEGORIES — UI config for the reaction picker (no artwork data)
 ├── supabase/
 │   ├── schema.sql             # Database schema (artworks, reactions, comments, comment_likes)
 │   ├── seed.sql               # Test data: 10 artworks, ~80 reactions, ~30 comments, ~40 likes
@@ -57,7 +57,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY    # Supabase anon key (client-safe, RLS protects 
 IMAGE_SEARCH_BYPASS_SECRET       # Vercel deployment protection bypass (SERVER-SIDE ONLY)
 ```
 
-The app works without any env vars — it falls back to hardcoded data and the scan page will attempt the API without auth.
+Without Supabase env vars, pages show empty states. The scan page will attempt the image API without auth.
 
 ## Development
 
@@ -69,7 +69,7 @@ npm run dev          # http://localhost:3000
 
 ## Key patterns
 
-- **Offline-first**: Everything works with hardcoded data when Supabase isn't configured. The `isConnected()` check in `lib/supabase.js` gates database calls.
+- **Database-first**: All data comes from Supabase. Pages show empty states when the database isn't configured. The `isConnected()` check in `lib/supabase.js` gates database calls.
 - **Guest identity**: Auto-generated "Guest-XXXX" ID stored in localStorage. No sign-up required to react and comment.
 - **Server-side secrets**: The image search bypass secret is only used in the `/api/scan` route handler, never exposed to the browser. Any new secrets should follow this pattern.
 - **Emoji intensity reactions**: 8 emotion categories × 4 intensity levels each. One reaction per visitor per artwork (upsert).
@@ -93,7 +93,7 @@ All tables have RLS enabled: anyone can read, anyone can insert. Artworks and re
 
 ### DB integration pattern
 
-All pages try to load from the database first, then fall back to the hardcoded data in `data/artworks.js` when Supabase isn't configured. The key functions in `lib/db.js`:
+All pages load from the database. When Supabase isn't configured, DB functions return `null` and pages show empty states. The key functions in `lib/db.js`:
 
 - `getArtwork(id)` — single artwork lookup
 - `getTopByCategory()` — homepage: top-reacted artwork per emotion category
