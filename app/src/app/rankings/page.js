@@ -7,31 +7,6 @@ import BottomNav from "../components/BottomNav";
 import BookmarkButton from "../components/BookmarkButton";
 import { getArtworkRankings, getCommentHeartRankings } from "../lib/db";
 
-// Artworks ranked by total comment hearts (sum of all comment + reply likes)
-// Only artworks that have comment data qualify
-const MOST_COMMENTED = [
-  { id: "11417",  title: "Washington Crossing the Delaware",    artist: "Emanuel Leutze",       year: "1851",        image: "https://images.metmuseum.org/CRDImages/ap/original/DT100.jpg",        topEmoji: "❤️", reactions: 206, label: "comment hearts" },
-  { id: "45434",  title: "Under the Wave off Kanagawa",         artist: "Katsushika Hokusai",   year: "ca. 1830–32", image: "https://images.metmuseum.org/CRDImages/as/original/DP141139.jpg",     topEmoji: "🤔", reactions: 118, label: "comment hearts" },
-  { id: "436105", title: "The Death of Socrates",               artist: "Jacques-Louis David",  year: "1787",        image: "https://images.metmuseum.org/CRDImages/ep/original/DP-13139-001.jpg", topEmoji: "😢", reactions: 98,  label: "comment hearts" },
-  { id: "437984", title: "Water Lilies",                        artist: "Claude Monet",         year: "1919",        image: "https://images.metmuseum.org/CRDImages/ep/original/DT1877.jpg",       topEmoji: "❤️", reactions: 90,  label: "comment hearts" },
-  { id: "544",    title: "Sphinx of Hatshepsut",                artist: "Unknown",              year: "ca. 1479 B.C.",image: "https://images.metmuseum.org/CRDImages/eg/original/DP246556.jpg",    topEmoji: "😍", reactions: 88,  label: "comment hearts" },
-  { id: "35829",  title: "Armor Garniture",                     artist: "Kolman Helmschmid",    year: "ca. 1525",    image: "https://images.metmuseum.org/CRDImages/aa/original/DP-12881-005.jpg", topEmoji: "😱", reactions: 46,  label: "comment hearts" },
-];
-
-// All artworks with total reactions computed from source data
-const RANKED_ARTWORKS = [
-  { id: "437984",  title: "Water Lilies",                        artist: "Claude Monet",           year: "1919",          image: "https://images.metmuseum.org/CRDImages/ep/original/DT1877.jpg",       topEmoji: "❤️",  reactions: 5944 },
-  { id: "11417",   title: "Washington Crossing the Delaware",    artist: "Emanuel Leutze",          year: "1851",          image: "https://images.metmuseum.org/CRDImages/ap/original/DT100.jpg",        topEmoji: "😍",  reactions: 4664 },
-  { id: "544",     title: "Sphinx of Hatshepsut",                artist: "Unknown",                 year: "ca. 1479 B.C.", image: "https://images.metmuseum.org/CRDImages/eg/original/DP246556.jpg",     topEmoji: "😍",  reactions: 4320 },
-  { id: "45434",   title: "Under the Wave off Kanagawa",         artist: "Katsushika Hokusai",      year: "ca. 1830–32",   image: "https://images.metmuseum.org/CRDImages/as/original/DP141139.jpg",     topEmoji: "🤔",  reactions: 3211 },
-  { id: "436105",  title: "The Death of Socrates",               artist: "Jacques-Louis David",     year: "1787",          image: "https://images.metmuseum.org/CRDImages/ep/original/DP-13139-001.jpg", topEmoji: "😢",  reactions: 2847 },
-  { id: "10814",   title: "Heart of the Andes",                  artist: "Frederic Edwin Church",   year: "1859",          image: "https://images.metmuseum.org/CRDImages/ap/original/DT51.jpg",         topEmoji: "😮",  reactions: 2105 },
-  { id: "35829",   title: "Armor Garniture",                     artist: "Kolman Helmschmid",       year: "ca. 1525",      image: "https://images.metmuseum.org/CRDImages/aa/original/DP-12881-005.jpg", topEmoji: "😱",  reactions: 1956 },
-  { id: "11507",   title: "The Rocky Mountains, Lander's Peak",  artist: "Albert Bierstadt",        year: "1863",          image: "https://images.metmuseum.org/CRDImages/ap/original/DT160.jpg",        topEmoji: "😍",  reactions: 1847 },
-  { id: "10159",   title: "Fur Traders Descending the Missouri", artist: "George Caleb Bingham",    year: "1845",          image: "https://images.metmuseum.org/CRDImages/ap/original/DT68.jpg",         topEmoji: "❤️",  reactions: 923  },
-  { id: "11189",   title: "The Veteran in a New Field",          artist: "Winslow Homer",           year: "1865",          image: "https://images.metmuseum.org/CRDImages/ap/original/DT1880.jpg",       topEmoji: "🤔",  reactions: 654  },
-];
-
 const TABS = ["🔥 Most Reacted", "🔖 Most Saved", "💬 Most Commented"];
 
 const MEDALS = ["🥇", "🥈", "🥉"];
@@ -57,8 +32,8 @@ function toRankingItem(art) {
 
 export default function RankingsPage() {
   const [activeTab, setActiveTab] = useState(0);
-  const [dbReacted, setDbReacted] = useState(null);
-  const [dbCommented, setDbCommented] = useState(null);
+  const [reactedData, setReactedData] = useState([]);
+  const [commentedData, setCommentedData] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -66,14 +41,12 @@ export default function RankingsPage() {
         getArtworkRankings(10),
         getCommentHeartRankings(10),
       ]);
-      if (reacted) setDbReacted(reacted.map(toRankingItem));
-      if (commented) setDbCommented(commented.map(toRankingItem));
+      if (reacted) setReactedData(reacted.map(toRankingItem));
+      if (commented) setCommentedData(commented.map(toRankingItem));
     }
     load();
   }, []);
 
-  const reactedData = dbReacted || RANKED_ARTWORKS;
-  const commentedData = dbCommented || MOST_COMMENTED;
   const data = activeTab === 2 ? commentedData : reactedData;
   const metricLabel = activeTab === 2 ? "comment hearts" : "reactions";
   const metricIcon = activeTab === 2 ? "❤️" : null;
@@ -128,8 +101,16 @@ export default function RankingsPage() {
       {/* Scrollable content */}
       <div className="nav-spacer" style={{ flex: 1, padding: "24px 20px 0", display: "flex", flexDirection: "column", gap: 24 }}>
 
+        {data.length === 0 && (
+          <div style={{ textAlign: "center", padding: "60px 20px", color: "#A09B94" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🏛️</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6560" }}>No rankings yet</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}>Scan artworks and react to see them appear here!</div>
+          </div>
+        )}
+
         {/* ── Podium: top 3 ──────────────────────────────────────── */}
-        <div style={{ animation: "fadeUp 0.4s ease both" }}>
+        {top1 && <div style={{ animation: "fadeUp 0.4s ease both" }}>
 
           {/* #1 Hero card */}
           <Link href={`/artwork/${top1.id}`} style={{ textDecoration: "none", display: "block", marginBottom: 12 }}>
@@ -192,7 +173,7 @@ export default function RankingsPage() {
 
           {/* #2 and #3 side by side */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {[top2, top3].map((art, idx) => (
+            {[top2, top3].filter(Boolean).map((art, idx) => (
               <Link key={art.id} href={`/artwork/${art.id}`} style={{ textDecoration: "none" }}>
                 <div className="podium-card" style={{
                   borderRadius: 20,
@@ -232,10 +213,10 @@ export default function RankingsPage() {
               </Link>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* ── #4–#10 list ────────────────────────────────────────── */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, animation: "fadeUp 0.4s ease 0.1s both" }}>
+        {rest.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 4, animation: "fadeUp 0.4s ease 0.1s both" }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
             Leaderboard
           </div>
@@ -286,7 +267,7 @@ export default function RankingsPage() {
               </Link>
             );
           })}
-        </div>
+        </div>}
       </div>
 
       <BottomNav variant="light" />
