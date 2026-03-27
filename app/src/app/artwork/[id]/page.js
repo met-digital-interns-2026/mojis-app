@@ -405,14 +405,32 @@ export default function ArtDetailPage({ params }) {
       {/* Scrollable Content */}
       <div className="hide-scrollbar" style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
 
-        {/* Hero Image */}
-        <div style={{ width: "100%", height: 260, position: "relative", overflow: "hidden", background: "#E8E4DD" }}>
-          <img src={artwork.image} alt={artwork.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            onError={(e) => { e.target.style.display = "none"; }}
-          />
+        {/* Hero Image — uncropped, full artwork visible */}
+        <div style={{
+          width: "100%",
+          maxHeight: "50vh",
+          minHeight: 180,
+          position: "relative",
+          overflow: "hidden",
+          background: "#E8E4DD",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}>
+          {artwork.image ? (
+            <img src={artwork.image} alt={artwork.title}
+              style={{
+                maxWidth: "100%",
+                maxHeight: "50vh",
+                objectFit: "contain",
+              }}
+              onError={(e) => { e.target.style.display = "none"; }}
+            />
+          ) : (
+            <div style={{ fontSize: 48, color: "#C4BDB6", padding: "40px 0" }}>🖼️</div>
+          )}
           <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0, height: 80,
+            position: "absolute", bottom: 0, left: 0, right: 0, height: 40,
             background: "linear-gradient(transparent, #F7F5F0)",
           }} />
         </div>
