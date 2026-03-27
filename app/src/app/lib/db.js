@@ -11,6 +11,353 @@
 import { supabase, isConnected } from "./supabase";
 
 // ==================
+// ARTWORKS
+// ==================
+
+// Get a single artwork by its Met object ID.
+// Returns { id, title, artist, year, image, ... } or null.
+export async function getArtwork(artworkId) {
+  if (!isConnected()) return null;
+
+  const { data, error } = await supabase
+    .from("artworks")
+    .select("*")
+    .eq("id", artworkId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error fetching artwork:", error);
+    return null;
+  }
+  return data;
+}
+
+// Get all artworks that have at least one reaction, ranked by total reaction count.
+// Used by the rankings page.
+// Returns: [{ id, title, artist, year, image, ..., reaction_count, top_emoji }]
+export async function getArtworkRankings(limit = 10) {
+  if (!isConnected()) return null;
+
+  // Get reaction counts per artwork
+  const { data: reactions, error: rErr } = await supabase
+    .from("reactions")
+    .select("artwork_id, emoji");
+
+  if (rErr) {
+    console.error("Error fetching reaction rankings:", rErr);
+    return null;
+  }
+
+  // Count reactions per artwork and find the most common emoji
+  const artworkStats = {};
+  for (const r of reactions) {
+    if (!artworkStats[r.artwork_id]) {
+      artworkStats[r.artwork_id] = { count: 0, emojis: {} };
+    }
+    artworkStats[r.artwork_id].count++;
+    artworkStats[r.artwork_id].emojis[r.emoji] = (artworkStats[r.artwork_id].emojis[r.emoji] || 0) + 1;
+  }
+
+  // Sort by count descending
+  const ranked = Object.entries(artworkStats)
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, limit);
+
+  if (ranked.length === 0) return [];
+
+  // Fetch artwork details for the top ones
+  const artworkIds = ranked.map(([id]) => id);
+  const { data: artworks, error: aErr } = await supabase
+    .from("artworks")
+    .select("*")
+    .in("id", artworkIds);
+
+  if (aErr) {
+    console.error("Error fetching ranked artworks:", aErr);
+    return null;
+  }
+
+  const artworkMap = {};
+  for (const a of artworks) artworkMap[a.id] = a;
+
+  return ranked
+    .map(([id, stats]) => {
+      const art = artworkMap[id];
+      if (!art) return null;
+      // Find the top emoji
+      const topEmoji = Object.entries(stats.emojis)
+        .sort(([, a], [, b]) => b - a)[0]?.[0] || "❤️";
+      return {
+        ...art,
+        reaction_count: stats.count,
+        topEmoji,
+      };
+    })
+    .filter(Boolean);
+}
+
+// Get artworks ranked by total comment likes (heart count).
+// Used by the "Most Commented" tab on the rankings page.
+export async function getCommentHeartRankings(limit = 10) {
+  if (!isConnected()) return null;
+
+  // Get all comment likes joined with comments to get artwork_id
+  const { data: comments, error: cErr } = await supabase
+    .from("comments")
+    .select("id, artwork_id");
+
+  if (cErr) {
+    console.error("Error fetching comments for rankings:", cErr);
+    return null;
+  }
+
+  const { data: likes, error: lErr } = await supabase
+    .from("comment_likes")
+    .select("comment_id");
+
+  if (lErr) {
+    console.error("Error fetching likes for rankings:", lErr);
+    return null;
+  }
+
+  // Map comment_id to artwork_id
+  const commentArtwork = {};
+  for (const c of comments) commentArtwork[c.id] = c.artwork_id;
+
+  // Count likes per artwork
+  const artworkLikes = {};
+  for (const l of likes) {
+    const artworkId = commentArtwork[l.comment_id];
+    if (artworkId) {
+      artworkLikes[artworkId] = (artworkLikes[artworkId] || 0) + 1;
+    }
+  }
+
+  const ranked = Object.entries(artworkLikes)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, limit);
+
+  if (ranked.length === 0) return [];
+
+  const artworkIds = ranked.map(([id]) => id);
+  const { data: artworks, error: aErr } = await supabase
+    .from("artworks")
+    .select("*")
+    .in("id", artworkIds);
+
+  if (aErr) return null;
+
+  const artworkMap = {};
+  for (const a of artworks) artworkMap[a.id] = a;
+
+  // Also get top emoji per artwork from reactions
+  const { data: reactions } = await supabase
+    .from("reactions")
+    .select("artwork_id, emoji")
+    .in("artwork_id", artworkIds);
+
+  const topEmojis = {};
+  if (reactions) {
+    const emojiCounts = {};
+    for (const r of reactions) {
+      if (!emojiCounts[r.artwork_id]) emojiCounts[r.artwork_id] = {};
+      emojiCounts[r.artwork_id][r.emoji] = (emojiCounts[r.artwork_id][r.emoji] || 0) + 1;
+    }
+    for (const [artId, counts] of Object.entries(emojiCounts)) {
+      topEmojis[artId] = Object.entries(counts).sort(([, a], [, b]) => b - a)[0]?.[0] || "❤️";
+    }
+  }
+
+  return ranked
+    .map(([id, likeCount]) => {
+      const art = artworkMap[id];
+      if (!art) return null;
+      return {
+        ...art,
+        reaction_count: likeCount,
+        topEmoji: topEmojis[id] || "❤️",
+        label: "comment hearts",
+      };
+    })
+    .filter(Boolean);
+}
+
+// Get the top-reacted artwork for each emotion category.
+// Used by the homepage to show "Saddest", "Most Loved", etc.
+// Returns: { sad: { artwork, count, topReactions }, love: { ... }, ... }
+export async function getTopByCategory() {
+  if (!isConnected()) return null;
+
+  // Fetch all reactions with artwork info
+  const { data: reactions, error } = await supabase
+    .from("reactions")
+    .select("artwork_id, category, emoji");
+
+  if (error) {
+    console.error("Error fetching category leaders:", error);
+    return null;
+  }
+
+  // Group by category → artwork → count
+  const catArtworks = {};
+  for (const r of reactions) {
+    if (!catArtworks[r.category]) catArtworks[r.category] = {};
+    if (!catArtworks[r.category][r.artwork_id]) {
+      catArtworks[r.category][r.artwork_id] = { count: 0, emojis: {} };
+    }
+    catArtworks[r.category][r.artwork_id].count++;
+    catArtworks[r.category][r.artwork_id].emojis[r.emoji] =
+      (catArtworks[r.category][r.artwork_id].emojis[r.emoji] || 0) + 1;
+  }
+
+  // For each category, find the artwork with the most reactions
+  const leaders = {};
+  const artworkIds = new Set();
+  for (const [cat, artworks] of Object.entries(catArtworks)) {
+    const sorted = Object.entries(artworks).sort(([, a], [, b]) => b.count - a.count);
+    if (sorted.length > 0) {
+      const [artId, stats] = sorted[0];
+      artworkIds.add(artId);
+      leaders[cat] = {
+        artworkId: artId,
+        count: stats.count,
+        emojis: stats.emojis,
+      };
+    }
+  }
+
+  if (artworkIds.size === 0) return {};
+
+  // Fetch artwork details
+  const { data: artworks, error: aErr } = await supabase
+    .from("artworks")
+    .select("*")
+    .in("id", [...artworkIds]);
+
+  if (aErr) return null;
+
+  const artworkMap = {};
+  for (const a of artworks) artworkMap[a.id] = a;
+
+  // Also get comments for these artworks
+  const { data: comments } = await supabase
+    .from("comments")
+    .select("*")
+    .in("artwork_id", [...artworkIds])
+    .order("created_at", { ascending: true });
+
+  // Get like counts
+  const commentIds = (comments || []).map(c => c.id);
+  let likeCounts = {};
+  if (commentIds.length > 0) {
+    const { data: likes } = await supabase
+      .from("comment_likes")
+      .select("comment_id")
+      .in("comment_id", commentIds);
+    if (likes) {
+      for (const l of likes) {
+        likeCounts[l.comment_id] = (likeCounts[l.comment_id] || 0) + 1;
+      }
+    }
+  }
+
+  // Build comment trees per artwork
+  const commentsByArtwork = {};
+  for (const c of (comments || [])) {
+    if (!commentsByArtwork[c.artwork_id]) commentsByArtwork[c.artwork_id] = [];
+    commentsByArtwork[c.artwork_id].push(c);
+  }
+
+  function buildCommentTree(artworkComments) {
+    const topLevel = [];
+    const replyMap = {};
+    for (const c of artworkComments) {
+      const formatted = {
+        user: c.guest_name,
+        emoji: c.emoji,
+        text: c.text,
+        likes: likeCounts[c.id] || 0,
+        replies: [],
+      };
+      if (c.parent_id) {
+        const parent = artworkComments.find(p => p.id === c.parent_id);
+        formatted.replyTo = parent ? parent.guest_name : null;
+        if (!replyMap[c.parent_id]) replyMap[c.parent_id] = [];
+        replyMap[c.parent_id].push(formatted);
+      } else {
+        formatted.id = c.id;
+        topLevel.push(formatted);
+      }
+    }
+    for (const comment of topLevel) {
+      comment.replies = replyMap[comment.id] || [];
+      delete comment.id;
+    }
+    return topLevel;
+  }
+
+  // Assemble results
+  const result = {};
+  for (const [cat, leader] of Object.entries(leaders)) {
+    const art = artworkMap[leader.artworkId];
+    if (!art) continue;
+
+    // Sort emojis by count for the reaction pills
+    const reactionEntries = Object.entries(leader.emojis)
+      .sort(([, a], [, b]) => b - a);
+    const reactions = {};
+    for (const [emoji, count] of reactionEntries) {
+      reactions[emoji] = count;
+    }
+
+    result[cat] = {
+      artwork: {
+        id: art.id,
+        title: art.title,
+        artist: art.artist,
+        year: art.year,
+        image: art.image,
+        fact: art.fact,
+        reactions,
+        comments: buildCommentTree(commentsByArtwork[art.id] || []),
+      },
+      count: leader.count,
+      department: art.department,
+    };
+  }
+
+  return result;
+}
+
+// Ensure an artwork exists in the artworks table.
+// Called when we discover a new artwork (e.g. from image recognition scan).
+export async function upsertArtwork(artwork) {
+  if (!isConnected()) return null;
+
+  const { error } = await supabase
+    .from("artworks")
+    .upsert({
+      id: artwork.id,
+      title: artwork.title,
+      artist: artwork.artist,
+      year: artwork.year || artwork.dated || null,
+      image: artwork.image,
+      medium: artwork.medium || null,
+      department: artwork.department || null,
+      gallery: artwork.gallery || null,
+      fact: artwork.fact || null,
+    }, {
+      onConflict: "id",
+    });
+
+  if (error) {
+    console.error("Error upserting artwork:", error);
+    return false;
+  }
+  return true;
+}
+
+// ==================
 // REACTIONS
 // ==================
 

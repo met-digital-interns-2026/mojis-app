@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import BottomNav from "../components/BottomNav";
 import BookmarkButton from "../components/BookmarkButton";
+import { getArtworkRankings, getCommentHeartRankings } from "../lib/db";
 
 // Artworks ranked by total comment hearts (sum of all comment + reply likes)
 // Only artworks that have comment data qualify
@@ -40,9 +41,40 @@ function fmt(n) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : n;
 }
 
+// Transform DB artwork into the shape the rankings UI expects
+function toRankingItem(art) {
+  return {
+    id: art.id,
+    title: art.title,
+    artist: art.artist,
+    year: art.year,
+    image: art.image,
+    topEmoji: art.topEmoji || "❤️",
+    reactions: art.reaction_count || 0,
+    label: art.label || undefined,
+  };
+}
+
 export default function RankingsPage() {
   const [activeTab, setActiveTab] = useState(0);
-  const data = activeTab === 2 ? MOST_COMMENTED : RANKED_ARTWORKS;
+  const [dbReacted, setDbReacted] = useState(null);
+  const [dbCommented, setDbCommented] = useState(null);
+
+  useEffect(() => {
+    async function load() {
+      const [reacted, commented] = await Promise.all([
+        getArtworkRankings(10),
+        getCommentHeartRankings(10),
+      ]);
+      if (reacted) setDbReacted(reacted.map(toRankingItem));
+      if (commented) setDbCommented(commented.map(toRankingItem));
+    }
+    load();
+  }, []);
+
+  const reactedData = dbReacted || RANKED_ARTWORKS;
+  const commentedData = dbCommented || MOST_COMMENTED;
+  const data = activeTab === 2 ? commentedData : reactedData;
   const metricLabel = activeTab === 2 ? "comment hearts" : "reactions";
   const metricIcon = activeTab === 2 ? "❤️" : null;
   const [top1, top2, top3, ...rest] = data;
