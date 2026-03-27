@@ -11,17 +11,38 @@
 --   1. Go to supabase.com and create a free project
 --   2. Go to SQL Editor (left sidebar)
 --   3. Paste this entire file and click "Run"
+--
+-- To reset everything (drop all tables and start over):
+--   Run supabase/reset.sql first, then run this file again.
 -- ==============================================
+
+-- ARTWORKS TABLE
+-- Stores metadata about artworks that visitors have interacted with.
+-- We cache artwork info here so the homepage and rankings can load fast
+-- without calling the Met API for every artwork on every page load.
+-- Example row: "436105", "The Death of Socrates", "Jacques-Louis David", ...
+CREATE TABLE IF NOT EXISTS artworks (
+  id TEXT PRIMARY KEY,                 -- Met object ID (e.g. "436105")
+  title TEXT NOT NULL,                 -- artwork title
+  artist TEXT NOT NULL DEFAULT 'Unknown',
+  year TEXT,                           -- display date (e.g. "1787", "ca. 1830–32")
+  image TEXT,                          -- primary image URL
+  medium TEXT,                         -- materials (e.g. "Oil on canvas")
+  department TEXT,                     -- Met department (e.g. "European Paintings")
+  gallery TEXT,                        -- gallery location (e.g. "Gallery 760")
+  fact TEXT,                           -- fun fact / curatorial note
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
 
 -- REACTIONS TABLE
 -- Stores one emoji reaction per guest per artwork.
--- Example row: guest "abc123" reacted 😭 (sad, level 6) to artwork "436105"
-CREATE TABLE reactions (
+-- Example row: guest "abc123" reacted 😭 (sad, level 3) to artwork "436105"
+CREATE TABLE IF NOT EXISTS reactions (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  artwork_id TEXT NOT NULL,           -- which artwork (e.g. "436105")
+  artwork_id TEXT NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
   guest_id TEXT NOT NULL,             -- who reacted (e.g. "Guest-7392")
   category TEXT NOT NULL,             -- emotion category (e.g. "sad")
-  level INTEGER NOT NULL,             -- intensity 0-5 (0=mild, 5=extreme)
+  level INTEGER NOT NULL,             -- intensity 0-3 (0=mild, 3=extreme)
   emoji TEXT NOT NULL,                -- the actual emoji (e.g. "😭")
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(artwork_id, guest_id)        -- one reaction per person per artwork
@@ -30,9 +51,9 @@ CREATE TABLE reactions (
 -- COMMENTS TABLE
 -- Stores comments on artworks. Replies are comments with a parent_id.
 -- Example row: guest "abc123" said "This is amazing" on artwork "436105"
-CREATE TABLE comments (
+CREATE TABLE IF NOT EXISTS comments (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  artwork_id TEXT NOT NULL,           -- which artwork
+  artwork_id TEXT NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
   guest_id TEXT NOT NULL,             -- who wrote it
   guest_name TEXT NOT NULL,           -- display name (e.g. "Guest-7392")
   emoji TEXT NOT NULL DEFAULT '💬',   -- their reaction emoji (shows next to name)
@@ -44,12 +65,23 @@ CREATE TABLE comments (
 -- COMMENT_LIKES TABLE
 -- Tracks who liked which comment (prevents double-liking).
 -- Example row: guest "abc123" liked comment #5
-CREATE TABLE comment_likes (
+CREATE TABLE IF NOT EXISTS comment_likes (
   comment_id BIGINT REFERENCES comments(id) ON DELETE CASCADE,
   guest_id TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (comment_id, guest_id)  -- one like per person per comment
 );
+
+-- ==============================================
+-- INDEXES
+-- ==============================================
+-- Speed up common queries (looking up reactions/comments by artwork).
+
+CREATE INDEX IF NOT EXISTS idx_reactions_artwork ON reactions(artwork_id);
+CREATE INDEX IF NOT EXISTS idx_reactions_guest ON reactions(artwork_id, guest_id);
+CREATE INDEX IF NOT EXISTS idx_comments_artwork ON comments(artwork_id);
+CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id);
+CREATE INDEX IF NOT EXISTS idx_comment_likes_guest ON comment_likes(comment_id, guest_id);
 
 -- ==============================================
 -- ROW LEVEL SECURITY (RLS)
@@ -60,16 +92,19 @@ CREATE TABLE comment_likes (
 -- This is important for security — without it, anyone
 -- could delete other people's comments!
 
+ALTER TABLE artworks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comment_likes ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read all reactions, comments, and likes
+-- Anyone can read everything
+CREATE POLICY "Anyone can read artworks" ON artworks FOR SELECT USING (true);
 CREATE POLICY "Anyone can read reactions" ON reactions FOR SELECT USING (true);
 CREATE POLICY "Anyone can read comments" ON comments FOR SELECT USING (true);
 CREATE POLICY "Anyone can read likes" ON comment_likes FOR SELECT USING (true);
 
 -- Anyone can insert (we're using anonymous/guest access)
+CREATE POLICY "Anyone can insert artworks" ON artworks FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can insert reactions" ON reactions FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can insert comments" ON comments FOR INSERT WITH CHECK (true);
 CREATE POLICY "Anyone can insert likes" ON comment_likes FOR INSERT WITH CHECK (true);

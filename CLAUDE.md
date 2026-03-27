@@ -18,11 +18,14 @@ app/                          # Next.js application (all code lives here)
 │   │   ├── image-search.js    # Client helper — sends image to /api/scan, parses results
 │   │   ├── met-api.js         # Met Collection API (public, no auth) — fetch/search artworks
 │   │   ├── supabase.js        # Supabase client init (database connection)
-│   │   ├── db.js              # Database functions (reactions, comments, likes)
+│   │   ├── db.js              # Database functions (reactions, comments, likes, rankings, artworks)
 │   │   ├── auth.js            # Auth helpers (signUp, signIn, signOut)
 │   │   └── guest.js           # Guest identity via localStorage
 │   └── data/artworks.js       # Hardcoded artwork data (fallback when DB not connected)
-├── supabase/schema.sql        # Database schema (reactions, comments, comment_likes)
+├── supabase/
+│   ├── schema.sql             # Database schema (artworks, reactions, comments, comment_likes)
+│   ├── seed.sql               # Test data: 10 artworks, ~80 reactions, ~30 comments, ~40 likes
+│   └── reset.sql              # Drop all tables (for starting over)
 ├── docs/
 │   └── image-recognition-api.md  # Full docs for the image similarity search endpoint
 └── .env.local.example         # Environment variable template
@@ -72,10 +75,30 @@ npm run dev          # http://localhost:3000
 
 ## Database schema
 
-Three tables in Supabase (see `supabase/schema.sql`):
+Four tables in Supabase (see `supabase/schema.sql`):
 
-- **reactions** — artwork_id, guest_id, category, level, emoji (unique per guest+artwork)
-- **comments** — artwork_id, guest_id, guest_name, emoji, text, parent_id (for replies)
-- **comment_likes** — comment_id, guest_id (unique per guest+comment)
+- **artworks** — id (Met object ID, PK), title, artist, year, image, medium, department, gallery, fact
+- **reactions** — artwork_id (FK→artworks), guest_id, category, level, emoji (unique per guest+artwork)
+- **comments** — artwork_id (FK→artworks), guest_id, guest_name, emoji, text, parent_id (for replies)
+- **comment_likes** — comment_id (FK→comments), guest_id (unique per guest+comment)
 
 All tables have RLS enabled: anyone can read, anyone can insert, users can only update/delete their own rows.
+
+### Setting up the database
+
+1. Run `supabase/schema.sql` in the Supabase SQL Editor to create tables
+2. Run `supabase/seed.sql` to populate with test data (10 artworks, ~80 reactions, ~30 comments)
+3. To reset: run `supabase/reset.sql` then repeat steps 1-2
+
+### DB integration pattern
+
+All pages try to load from the database first, then fall back to the hardcoded data in `data/artworks.js` when Supabase isn't configured. The key functions in `lib/db.js`:
+
+- `getArtwork(id)` — single artwork lookup
+- `getTopByCategory()` — homepage: top-reacted artwork per emotion category
+- `getArtworkRankings()` — rankings: artworks sorted by total reaction count
+- `getCommentHeartRankings()` — rankings: artworks sorted by comment like count
+- `getReactionCounts(id)` / `getMyReaction(id, guestId)` / `saveReaction(...)` — reaction CRUD
+- `getComments(id)` / `addComment(...)` — comment CRUD with nested reply trees
+- `toggleLike(commentId, guestId)` / `getMyLikes(...)` — like CRUD
+- `upsertArtwork(artwork)` — insert/update artwork metadata (used by scan page)

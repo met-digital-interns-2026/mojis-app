@@ -7,6 +7,8 @@ import BottomNav from "../../components/BottomNav";
 import BookmarkButton from "../../components/BookmarkButton";
 import { ARTWORK_DETAIL, EMOJI_CATEGORIES, RELATED_ARTWORKS, getArtworkById } from "../../data/artworks";
 import { fetchArtwork } from "../../lib/met-api";
+import { getArtwork, getReactionCounts, getMyReaction, saveReaction, getComments, addComment, toggleLike, getMyLikes } from "../../lib/db";
+import { getGuestId, getGuestName } from "../../lib/guest";
 import AuthModal from "../../components/AuthModal";
 import { getSession } from "../../lib/auth";
 import { isConnected } from "../../lib/supabase";
@@ -221,14 +223,30 @@ export default function ArtDetailPage({ params }) {
   const fallbackArtwork = getArtworkById(id) || ARTWORK_DETAIL;
   const [artwork, setArtwork] = useState(fallbackArtwork);
   const [loading, setLoading] = useState(true);
+  const [reactionCounts, setReactionCounts] = useState(fallbackArtwork.reactions || {});
 
+  // Load artwork data: try DB first, then Met API, then hardcoded fallback
   useEffect(() => {
     let cancelled = false;
     async function loadArtwork() {
+      // Try database first
+      const dbArt = await getArtwork(id);
+      if (!cancelled && dbArt) {
+        setArtwork(prev => ({ ...prev, ...dbArt }));
+      }
+
+      // Also try the Met API for extra fields (dimensions, etc.)
       const apiData = await fetchArtwork(id);
       if (!cancelled && apiData && apiData.image) {
         setArtwork(prev => ({ ...prev, ...apiData }));
       }
+
+      // Load reaction counts from DB
+      const counts = await getReactionCounts(id);
+      if (!cancelled && counts) {
+        setReactionCounts(counts);
+      }
+
       if (!cancelled) setLoading(false);
     }
     loadArtwork();
@@ -237,26 +255,65 @@ export default function ArtDetailPage({ params }) {
 
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
-  const [comments, setComments] = useState(artwork.comments || []);
+  const [comments, setComments] = useState(fallbackArtwork.comments || []);
   const [newComment, setNewComment] = useState("");
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const visibleComments = showAllComments ? comments : comments.slice(0, 3);
 
-  const handleEmojiSelect = (category, level, emoji) => {
+  // Load comments and the user's existing reaction from DB
+  useEffect(() => {
+    let cancelled = false;
+    async function loadDbData() {
+      const dbComments = await getComments(id);
+      if (!cancelled && dbComments) {
+        setComments(dbComments);
+      }
+
+      const guestId = getGuestId();
+      const myReaction = await getMyReaction(id, guestId);
+      if (!cancelled && myReaction) {
+        setSelectedReaction(myReaction);
+      }
+    }
+    loadDbData();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  const handleEmojiSelect = async (category, level, emoji) => {
     setSelectedReaction({ category, level, emoji });
+
+    // Save to database
+    const guestId = getGuestId();
+    await saveReaction(id, guestId, category, level, emoji);
+
+    // Refresh counts
+    const counts = await getReactionCounts(id);
+    if (counts) setReactionCounts(counts);
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (newComment.trim()) {
-      setComments([...comments, {
-        user: "You", emoji: selectedReaction?.emoji || "💬",
-        text: newComment.trim(), likes: 0, replies: [],
+      const guestId = getGuestId();
+      const guestName = getGuestName();
+      const emoji = selectedReaction?.emoji || "💬";
+      const text = newComment.trim();
+
+      // Optimistic update
+      setComments(prev => [...prev, {
+        user: guestName, emoji, text, likes: 0, replies: [],
       }]);
       setNewComment("");
       setShowCommentInput(false);
       setShowAllComments(true);
+
+      // Save to DB
+      await addComment(id, guestId, guestName, emoji, text);
+
+      // Refresh from DB to get real IDs
+      const dbComments = await getComments(id);
+      if (dbComments) setComments(dbComments);
     }
   };
 
@@ -378,14 +435,14 @@ export default function ArtDetailPage({ params }) {
         )}
 
         {/* Existing Reactions */}
-        {artwork.reactions && (
+        {Object.keys(reactionCounts).length > 0 && (
           <div style={{ padding: "16px 20px 0", animation: "fadeUp 0.4s ease 0.15s both" }}>
             <div style={{
               fontSize: 12, fontWeight: 600, color: "#8C8580",
               letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10,
-            }}>Reactions ({(artwork.totalReactions || Object.values(artwork.reactions).reduce((a, b) => a + b, 0)).toLocaleString()})</div>
+            }}>Reactions ({Object.values(reactionCounts).reduce((a, b) => a + b, 0).toLocaleString()})</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {Object.entries(artwork.reactions).map(([emoji, count], i) => (
+              {Object.entries(reactionCounts).map(([emoji, count], i) => (
                 <div key={i} style={{
                   display: "flex", alignItems: "center", gap: 4, padding: "5px 12px",
                   background: "#FFF", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16,

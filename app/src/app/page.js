@@ -9,15 +9,30 @@ import BookmarkButton from "./components/BookmarkButton";
 import CommentsSection from "./components/CommentsSection";
 import { CATEGORIES, TRENDING } from "./data/artworks";
 import { getAvatar } from "./lib/guest";
+import { getTopByCategory } from "./lib/db";
 
 // Category whose comments have the most total likes — shown as a featured wide card on desktop
 function totalCommentLikes(cat) {
   return (cat.artwork.comments || []).reduce((s, c) =>
     s + (c.likes || 0) + (c.replies || []).reduce((rs, r) => rs + (r.likes || 0), 0), 0);
 }
-const FEATURED_IDX = CATEGORIES.reduce(
-  (best, cat, i, arr) => totalCommentLikes(cat) > totalCommentLikes(arr[best]) ? i : best, 0
-);
+function getFeaturedIdx(categories) {
+  return categories.reduce(
+    (best, cat, i, arr) => totalCommentLikes(cat) > totalCommentLikes(arr[best]) ? i : best, 0
+  );
+}
+
+// Map emotion category keys to display info
+const CATEGORY_DISPLAY = {
+  sad:        { emoji: "😢", label: "Saddest",       color: "#4A6FA5", bgGrad: "linear-gradient(135deg, #4A6FA5 0%, #2D4A7A 100%)" },
+  love:       { emoji: "❤️", label: "Most Loved",     color: "#C1476F", bgGrad: "linear-gradient(135deg, #C1476F 0%, #8B2252 100%)" },
+  scary:      { emoji: "😱", label: "Most Shocking",   color: "#D4763A", bgGrad: "linear-gradient(135deg, #D4763A 0%, #A04E1B 100%)" },
+  confused:   { emoji: "🤔", label: "Most Puzzling",   color: "#6B7B5E", bgGrad: "linear-gradient(135deg, #6B7B5E 0%, #4A5940 100%)" },
+  mindblowing:{ emoji: "🤯", label: "Mind-blowing",    color: "#00BCD4", bgGrad: "linear-gradient(135deg, #00BCD4 0%, #00838F 100%)" },
+  funny:      { emoji: "😂", label: "Funniest",        color: "#FFD600", bgGrad: "linear-gradient(135deg, #FFD600 0%, #F9A825 100%)" },
+  disgusted:  { emoji: "🤢", label: "Most Disgusting", color: "#7CB342", bgGrad: "linear-gradient(135deg, #7CB342 0%, #558B2F 100%)" },
+  angry:      { emoji: "🔥", label: "Most Heated",     color: "#F44336", bgGrad: "linear-gradient(135deg, #F44336 0%, #C62828 100%)" },
+};
 
 export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
@@ -25,6 +40,36 @@ export default function HomePage() {
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const [avatar, setAvatar] = useState("👤");
   const [isDesktop, setIsDesktop] = useState(false);
+  const [categories, setCategories] = useState(CATEGORIES);
+  const [featuredIdx, setFeaturedIdx] = useState(getFeaturedIdx(CATEGORIES));
+
+  // Load category leaders from DB, fall back to hardcoded data
+  useEffect(() => {
+    async function loadFromDb() {
+      const dbData = await getTopByCategory();
+      if (!dbData || Object.keys(dbData).length === 0) return;
+
+      // Build categories array from DB data, matching the hardcoded shape
+      const dbCategories = Object.entries(dbData)
+        .filter(([cat]) => CATEGORY_DISPLAY[cat])
+        .map(([cat, data]) => ({
+          emoji: CATEGORY_DISPLAY[cat].emoji,
+          label: CATEGORY_DISPLAY[cat].label,
+          count: data.count,
+          color: CATEGORY_DISPLAY[cat].color,
+          bgGrad: CATEGORY_DISPLAY[cat].bgGrad,
+          exhibition: data.department || "",
+          artwork: data.artwork,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      if (dbCategories.length > 0) {
+        setCategories(dbCategories);
+        setFeaturedIdx(getFeaturedIdx(dbCategories));
+      }
+    }
+    loadFromDb();
+  }, []);
 
   useEffect(() => {
     setLoaded(true);
@@ -217,8 +262,8 @@ export default function HomePage() {
 
         {/* Category Cards — 1-col on mobile/tablet, 2-col on desktop */}
         <div className="cards-grid" style={{ marginTop: isDesktop ? 24 : 0 }}>
-          {CATEGORIES.map((cat, i) => {
-            const isFeatured = isDesktop && i === FEATURED_IDX;
+          {categories.map((cat, i) => {
+            const isFeatured = isDesktop && i === featuredIdx;
             const topComments = isFeatured
               ? [...(cat.artwork.comments || [])].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 3)
               : [];
