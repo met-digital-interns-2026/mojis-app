@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import { getGuestId, getGuestName, setUsername, getAvatar, setAvatar, getBio, setBio, getFavorites, saveFavorites } from "../lib/guest";
-import { FEATURED_ARTWORKS } from "../data/artworks";
 import { getSession, signOut, onAuthChange } from "../lib/auth";
 import { isConnected } from "../lib/supabase";
+import { getArtworkRankings } from "../lib/db";
 import AuthModal from "../components/AuthModal";
 
 const BIO_LIMIT = 150;
@@ -44,8 +44,8 @@ function AvatarDisplay({ value, size = 88, editing = false, onClick }) {
 }
 
 // One card in the favorites display row
-function FavoriteCard({ fav, editing, onRemove }) {
-  const item = FEATURED_ARTWORKS.find(a => a.id === fav.id);
+function FavoriteCard({ fav, editing, onRemove, allArtworks }) {
+  const item = allArtworks.find(a => a.id === fav.id);
   if (!item) return null;
 
   return (
@@ -85,8 +85,16 @@ function FavoriteCard({ fav, editing, onRemove }) {
 }
 
 // Picker shown while editing — toggle artworks
-function FavoritesPicker({ favorites, onToggle }) {
+function FavoritesPicker({ favorites, onToggle, allArtworks }) {
   const isSelected = (id) => favorites.some(f => f.type === "artwork" && f.id === id);
+
+  if (allArtworks.length === 0) {
+    return (
+      <div style={{ padding: "16px 0", textAlign: "center", color: "#A09B94", fontSize: 13 }}>
+        No artworks available yet. Scan and react to artworks first!
+      </div>
+    );
+  }
 
   return (
     <div style={{ animation: "pop 0.2s ease both" }}>
@@ -94,7 +102,7 @@ function FavoritesPicker({ favorites, onToggle }) {
         Artworks
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-        {FEATURED_ARTWORKS.map(art => {
+        {allArtworks.map(art => {
           const selected = isSelected(art.id);
           return (
             <div key={art.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -149,6 +157,7 @@ export default function ProfilePage() {
   const [session, setSession] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("signup");
+  const [allArtworks, setAllArtworks] = useState([]);
 
   useEffect(() => {
     setGuestId(getGuestId());
@@ -160,6 +169,10 @@ export default function ProfilePage() {
     // Load auth session
     getSession().then(setSession);
     const unsubscribe = onAuthChange(setSession);
+    // Load artworks from DB for favorites/avatar pickers
+    getArtworkRankings(20).then(arts => {
+      if (arts) setAllArtworks(arts);
+    });
     return unsubscribe;
   }, []);
 
@@ -292,8 +305,12 @@ export default function ProfilePage() {
               <p style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
                 Choose an artwork
               </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-                {FEATURED_ARTWORKS.map(art => (
+              {allArtworks.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#A09B94", fontSize: 12, padding: 8 }}>
+                  No artworks available yet. Scan and react to artworks first!
+                </div>
+              ) : <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+                {allArtworks.map(art => (
                   <div key={art.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                     <div
                       className={`art-thumb${draftAvatar === art.image ? " selected" : ""}`}
@@ -310,7 +327,7 @@ export default function ProfilePage() {
                     }}>{art.title}</span>
                   </div>
                 ))}
-              </div>
+              </div>}
             </div>
           )}
 
@@ -453,6 +470,7 @@ export default function ProfilePage() {
                   fav={fav}
                   editing={editing}
                   onRemove={handleRemoveFavorite}
+                  allArtworks={allArtworks}
                 />
               ))}
             </div>
@@ -470,7 +488,7 @@ export default function ProfilePage() {
             <div style={{
               marginTop: 16, padding: 14, background: "#F7F5F0", borderRadius: 18,
             }}>
-              <FavoritesPicker favorites={draftFavorites} onToggle={handleFavoriteToggle} />
+              <FavoritesPicker favorites={draftFavorites} onToggle={handleFavoriteToggle} allArtworks={allArtworks} />
             </div>
           )}
         </div>

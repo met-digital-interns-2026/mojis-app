@@ -5,9 +5,9 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import BottomNav from "../../components/BottomNav";
 import BookmarkButton from "../../components/BookmarkButton";
-import { ARTWORK_DETAIL, EMOJI_CATEGORIES, RELATED_ARTWORKS, getArtworkById } from "../../data/artworks";
+import { EMOJI_CATEGORIES } from "../../data/artworks";
 import { fetchArtwork } from "../../lib/met-api";
-import { getArtwork, getReactionCounts, getMyReaction, saveReaction, getComments, addComment, toggleLike, getMyLikes } from "../../lib/db";
+import { getArtwork, getReactionCounts, getMyReaction, saveReaction, getComments, addComment, upsertArtwork, getArtworkRankings } from "../../lib/db";
 import { getGuestId, getGuestName } from "../../lib/guest";
 import AuthModal from "../../components/AuthModal";
 import { getSession } from "../../lib/auth";
@@ -220,12 +220,13 @@ function CommentBubble({ comment, delay = 0, depth = 0 }) {
 export default function ArtDetailPage({ params }) {
   const { id } = use(params);
 
-  const fallbackArtwork = getArtworkById(id) || ARTWORK_DETAIL;
-  const [artwork, setArtwork] = useState(fallbackArtwork);
+  // Start empty — no hardcoded fallback. Data comes from DB + Met API.
+  const [artwork, setArtwork] = useState({ id, title: "", artist: "", year: "" });
   const [loading, setLoading] = useState(true);
-  const [reactionCounts, setReactionCounts] = useState(fallbackArtwork.reactions || {});
+  const [reactionCounts, setReactionCounts] = useState({});
+  const [relatedArtworks, setRelatedArtworks] = useState([]);
 
-  // Load artwork data: try DB first, then Met API, then hardcoded fallback
+  // Load artwork data: try DB first, then Met API
   useEffect(() => {
     let cancelled = false;
     async function loadArtwork() {
@@ -235,16 +236,39 @@ export default function ArtDetailPage({ params }) {
         setArtwork(prev => ({ ...prev, ...dbArt }));
       }
 
-      // Also try the Met API for extra fields (dimensions, etc.)
+      // Also try the Met API for extra fields (dimensions, description, etc.)
       const apiData = await fetchArtwork(id);
       if (!cancelled && apiData && apiData.image) {
         setArtwork(prev => ({ ...prev, ...apiData }));
+
+        // If this artwork isn't in the DB yet, insert it so reactions/comments work
+        if (!dbArt) {
+          await upsertArtwork(apiData);
+        }
       }
 
       // Load reaction counts from DB
       const counts = await getReactionCounts(id);
       if (!cancelled && counts) {
         setReactionCounts(counts);
+      }
+
+      // Load related artworks from DB (other popular artworks in same department)
+      const rankings = await getArtworkRankings(6);
+      if (!cancelled && rankings) {
+        const related = rankings
+          .filter(a => a.id !== id)
+          .slice(0, 4)
+          .map(a => ({
+            id: a.id,
+            title: a.title,
+            artist: a.artist,
+            year: a.year,
+            image: a.image,
+            topEmoji: a.topEmoji || "❤️",
+            reactions: a.reaction_count || 0,
+          }));
+        setRelatedArtworks(related);
       }
 
       if (!cancelled) setLoading(false);
@@ -255,7 +279,7 @@ export default function ArtDetailPage({ params }) {
 
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
-  const [comments, setComments] = useState(fallbackArtwork.comments || []);
+  const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [showAllComments, setShowAllComments] = useState(false);
@@ -284,6 +308,11 @@ export default function ArtDetailPage({ params }) {
   const handleEmojiSelect = async (category, level, emoji) => {
     setSelectedReaction({ category, level, emoji });
 
+    // Ensure artwork is in DB before saving reaction
+    if (artwork.title) {
+      await upsertArtwork(artwork);
+    }
+
     // Save to database
     const guestId = getGuestId();
     await saveReaction(id, guestId, category, level, emoji);
@@ -299,6 +328,11 @@ export default function ArtDetailPage({ params }) {
       const guestName = getGuestName();
       const emoji = selectedReaction?.emoji || "💬";
       const text = newComment.trim();
+
+      // Ensure artwork is in DB before adding comment
+      if (artwork.title) {
+        await upsertArtwork(artwork);
+      }
 
       // Optimistic update
       setComments(prev => [...prev, {
@@ -394,30 +428,34 @@ export default function ArtDetailPage({ params }) {
           <div style={{ fontSize: 15, color: "#6B6560", marginBottom: 4 }}>
             {artwork.artist}, {artwork.year}
           </div>
-          {artwork.gallery && (
+          {(artwork.gallery || artwork.department) && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 5,
-                padding: "5px 12px", background: "rgba(0,0,0,0.05)",
-                border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12,
-              }}>
-                <span style={{ fontSize: 12 }}>📍</span>
-                <span style={{ fontSize: 12, color: "#6B6560", fontWeight: 500 }}>{artwork.gallery}</span>
-              </div>
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 5,
-                padding: "5px 12px", background: "rgba(0,0,0,0.05)",
-                border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12,
-              }}>
-                <span style={{ fontSize: 12 }}>🖼️</span>
-                <span style={{ fontSize: 12, color: "#6B6560", fontWeight: 500 }}>{artwork.exhibition}</span>
-              </div>
+              {artwork.gallery && (
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  padding: "5px 12px", background: "rgba(0,0,0,0.05)",
+                  border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12,
+                }}>
+                  <span style={{ fontSize: 12 }}>📍</span>
+                  <span style={{ fontSize: 12, color: "#6B6560", fontWeight: 500 }}>{artwork.gallery}</span>
+                </div>
+              )}
+              {artwork.department && (
+                <div style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  padding: "5px 12px", background: "rgba(0,0,0,0.05)",
+                  border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12,
+                }}>
+                  <span style={{ fontSize: 12 }}>🖼️</span>
+                  <span style={{ fontSize: 12, color: "#6B6560", fontWeight: 500 }}>{artwork.department}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* About This Work */}
-        {artwork.fact && (
+        {(artwork.fact || artwork.description) && (
           <div style={{ padding: "16px 20px 0", animation: "fadeUp 0.4s ease 0.1s both" }}>
             <div style={{ background: "#FFF", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.07)" }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
@@ -429,7 +467,7 @@ export default function ArtDetailPage({ params }) {
                   <div style={{ fontSize: 12, color: "#8C8580" }}>{artwork.year}</div>
                 </div>
               </div>
-              <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact}</p>
+              <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact || artwork.description}</p>
             </div>
           </div>
         )}
@@ -498,123 +536,122 @@ export default function ArtDetailPage({ params }) {
         </div>
 
         {/* Comments */}
-        {comments.length > 0 && (
-          <div style={{ padding: "24px 20px 0", animation: "fadeUp 0.4s ease 0.25s both" }}>
-            <div style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
-            }}>
-              <span style={{
-                fontSize: 12, fontWeight: 600, color: "#8C8580",
-                letterSpacing: "0.06em", textTransform: "uppercase",
-              }}>💬 Comments ({comments.length})</span>
-              {comments.length > 3 && (
-                <button onClick={() => setShowAllComments(!showAllComments)} style={{
-                  background: "none", border: "none", fontSize: 11, fontWeight: 600,
-                  color: "#C1476F", cursor: "pointer",
-                }}>
-                  {showAllComments ? "Show less" : `View all ${comments.length}`}
-                </button>
-              )}
-            </div>
+        <div style={{ padding: "24px 20px 0", animation: "fadeUp 0.4s ease 0.25s both" }}>
+          <div style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
+          }}>
+            <span style={{
+              fontSize: 12, fontWeight: 600, color: "#8C8580",
+              letterSpacing: "0.06em", textTransform: "uppercase",
+            }}>💬 Comments ({comments.length})</span>
+            {comments.length > 3 && (
+              <button onClick={() => setShowAllComments(!showAllComments)} style={{
+                background: "none", border: "none", fontSize: 11, fontWeight: 600,
+                color: "#C1476F", cursor: "pointer",
+              }}>
+                {showAllComments ? "Show less" : `View all ${comments.length}`}
+              </button>
+            )}
+          </div>
+          {comments.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {visibleComments.map((c, i) => (
                 <CommentBubble key={i} comment={c} delay={0.05 * i} />
               ))}
             </div>
+          )}
 
-            {showCommentInput ? (
-              <div style={{ marginTop: 12, animation: "fadeUp 0.2s ease" }}>
-                <div style={{ display: "flex", gap: 6 }}>
-                  <input type="text" value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                    placeholder="Share your thoughts..." autoFocus
-                    style={{
-                      flex: 1, background: "#FFF",
-                      border: "1.5px solid #E0DDD7", borderRadius: 12,
-                      padding: "10px 14px", fontSize: 13,
-                      color: "#2D2A26", outline: "none",
-                    }}
-                  />
-                  <button onClick={handleAddComment} style={{
-                    background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
-                    color: "#FFF", border: "none", borderRadius: 12,
-                    padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                  }}>Send</button>
-                </div>
+          {showCommentInput ? (
+            <div style={{ marginTop: 12, animation: "fadeUp 0.2s ease" }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                <input type="text" value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
+                  placeholder="Share your thoughts..." autoFocus
+                  style={{
+                    flex: 1, background: "#FFF",
+                    border: "1.5px solid #E0DDD7", borderRadius: 12,
+                    padding: "10px 14px", fontSize: 13,
+                    color: "#2D2A26", outline: "none",
+                  }}
+                />
+                <button onClick={handleAddComment} style={{
+                  background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
+                  color: "#FFF", border: "none", borderRadius: 12,
+                  padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                }}>Send</button>
               </div>
-            ) : (
-              <button onClick={handleCommentButtonClick} style={{
-                width: "100%", marginTop: 12, padding: "10px 14px",
-                background: "#FFF", border: "1.5px dashed #D9D5CE",
-                borderRadius: 12, fontSize: 12, color: "#A09B94",
-                cursor: "pointer", fontWeight: 500,
-              }}>
-                💬 Add a comment...
-              </button>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <button onClick={handleCommentButtonClick} style={{
+              width: "100%", marginTop: 12, padding: "10px 14px",
+              background: "#FFF", border: "1.5px dashed #D9D5CE",
+              borderRadius: 12, fontSize: 12, color: "#A09B94",
+              cursor: "pointer", fontWeight: 500,
+            }}>
+              💬 Add a comment...
+            </button>
+          )}
+        </div>
 
-        {/* Related Artworks */}
-        <div style={{ padding: "28px 0 20px", animation: "fadeUp 0.4s ease 0.3s both" }}>
-          <div style={{
-            padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
-          }}>
-            <span style={{
-              fontSize: 12, fontWeight: 600, color: "#8C8580",
-              letterSpacing: "0.06em", textTransform: "uppercase",
-            }}>Also in {artwork.exhibition || "The Met"}</span>
-            <span style={{ fontSize: 11, color: "#C1476F", fontWeight: 500, cursor: "pointer" }}>
-              View all →
-            </span>
-          </div>
-          <div className="hide-scrollbar" style={{
-            display: "flex", gap: 10, overflowX: "auto", padding: "0 20px 4px",
-          }}>
-            {RELATED_ARTWORKS.map((art, i) => (
-              <Link key={i} href={`/artwork/${art.id}`} style={{ textDecoration: "none" }}>
-                <div style={{
-                  flexShrink: 0, width: 150, background: "#FFF",
-                  borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)",
-                  overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease",
-                  animation: `fadeUp 0.4s ease ${0.35 + i * 0.08}s backwards`,
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
-                }}>
-                  <div style={{ width: "100%", height: 105, overflow: "hidden", position: "relative", background: "#E8E4DD" }}>
-                    <img src={art.image} alt={art.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                      onError={(e) => { e.target.style.display = "none"; }}
-                    />
-                    <div style={{
-                      position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: 8,
-                      background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)",
-                      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
-                    }}>{art.topEmoji}</div>
-                  </div>
-                  <div style={{ padding: "8px 10px 10px" }}>
-                    <div style={{
-                      fontSize: 12, fontWeight: 600, color: "#2D2A26", lineHeight: 1.3,
-                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-                      overflow: "hidden", marginBottom: 3,
-                    }}>{art.title}</div>
-                    <div style={{
-                      fontSize: 10, color: "#8C8580", marginBottom: 6,
-                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                    }}>{art.artist}, {art.year}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                      <span style={{ fontSize: 11 }}>{art.topEmoji}</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, color: "#8C8580" }}>
-                        {art.reactions >= 1000 ? `${(art.reactions / 1000).toFixed(1)}k` : art.reactions}
-                      </span>
-                      <span style={{ fontSize: 10, color: "#A09B94", marginLeft: 2 }}>reactions</span>
+        {/* Related Artworks — from DB rankings, excluding current */}
+        {relatedArtworks.length > 0 && (
+          <div style={{ padding: "28px 0 20px", animation: "fadeUp 0.4s ease 0.3s both" }}>
+            <div style={{
+              padding: "0 20px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
+            }}>
+              <span style={{
+                fontSize: 12, fontWeight: 600, color: "#8C8580",
+                letterSpacing: "0.06em", textTransform: "uppercase",
+              }}>More at The Met</span>
+            </div>
+            <div className="hide-scrollbar" style={{
+              display: "flex", gap: 10, overflowX: "auto", padding: "0 20px 4px",
+            }}>
+              {relatedArtworks.map((art, i) => (
+                <Link key={art.id} href={`/artwork/${art.id}`} style={{ textDecoration: "none" }}>
+                  <div style={{
+                    flexShrink: 0, width: 150, background: "#FFF",
+                    borderRadius: 14, border: "1px solid rgba(0,0,0,0.08)",
+                    overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease",
+                    animation: `fadeUp 0.4s ease ${0.35 + i * 0.08}s backwards`,
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
+                  }}>
+                    <div style={{ width: "100%", height: 105, overflow: "hidden", position: "relative", background: "#E8E4DD" }}>
+                      <img src={art.image} alt={art.title}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => { e.target.style.display = "none"; }}
+                      />
+                      <div style={{
+                        position: "absolute", top: 6, right: 6, width: 28, height: 28, borderRadius: 8,
+                        background: "rgba(255,255,255,0.85)", backdropFilter: "blur(8px)",
+                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+                      }}>{art.topEmoji}</div>
+                    </div>
+                    <div style={{ padding: "8px 10px 10px" }}>
+                      <div style={{
+                        fontSize: 12, fontWeight: 600, color: "#2D2A26", lineHeight: 1.3,
+                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                        overflow: "hidden", marginBottom: 3,
+                      }}>{art.title}</div>
+                      <div style={{
+                        fontSize: 10, color: "#8C8580", marginBottom: 6,
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                      }}>{art.artist}, {art.year}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ fontSize: 11 }}>{art.topEmoji}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: "#8C8580" }}>
+                          {art.reactions >= 1000 ? `${(art.reactions / 1000).toFixed(1)}k` : art.reactions}
+                        </span>
+                        <span style={{ fontSize: 10, color: "#A09B94", marginLeft: 2 }}>reactions</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <BottomNav variant="light" />

@@ -7,6 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import { searchByImage } from "../lib/image-search";
+import { upsertArtwork } from "../lib/db";
 
 export default function ScanPage() {
   // Phase: "camera" → "searching" → "found" | "not-found" | "error"
@@ -86,6 +87,10 @@ export default function ScanPage() {
       if (topResults.length > 0) {
         setResults(topResults);
         setPhase("found");
+        // Insert matched artworks into DB so reactions/comments work
+        for (const art of topResults) {
+          upsertArtwork({ id: art.id, title: art.title, artist: art.artist, year: art.dated, image: art.image, medium: art.medium, department: art.department, gallery: art.gallery });
+        }
       } else {
         setPhase("not-found");
       }
@@ -115,6 +120,10 @@ export default function ScanPage() {
       if (topResults.length > 0) {
         setResults(topResults);
         setPhase("found");
+        // Insert matched artworks into DB so reactions/comments work
+        for (const art of topResults) {
+          upsertArtwork({ id: art.id, title: art.title, artist: art.artist, year: art.dated, image: art.image, medium: art.medium, department: art.department, gallery: art.gallery });
+        }
       } else {
         setPhase("not-found");
       }

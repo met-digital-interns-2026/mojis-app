@@ -7,7 +7,6 @@ import Image from "next/image";
 import BottomNav from "./components/BottomNav";
 import BookmarkButton from "./components/BookmarkButton";
 import CommentsSection from "./components/CommentsSection";
-import { CATEGORIES, TRENDING } from "./data/artworks";
 import { getAvatar } from "./lib/guest";
 import { getTopByCategory } from "./lib/db";
 
@@ -40,16 +39,16 @@ export default function HomePage() {
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const [avatar, setAvatar] = useState("👤");
   const [isDesktop, setIsDesktop] = useState(false);
-  const [categories, setCategories] = useState(CATEGORIES);
-  const [featuredIdx, setFeaturedIdx] = useState(getFeaturedIdx(CATEGORIES));
+  const [categories, setCategories] = useState([]);
+  const [featuredIdx, setFeaturedIdx] = useState(0);
 
-  // Load category leaders from DB, fall back to hardcoded data
+  // Load category leaders from DB
   useEffect(() => {
     async function loadFromDb() {
       const dbData = await getTopByCategory();
       if (!dbData || Object.keys(dbData).length === 0) return;
 
-      // Build categories array from DB data, matching the hardcoded shape
+      // Build categories array from DB data
       const dbCategories = Object.entries(dbData)
         .filter(([cat]) => CATEGORY_DISPLAY[cat])
         .map(([cat, data]) => ({
@@ -210,38 +209,6 @@ export default function HomePage() {
       {/* Scrollable Content */}
       <div className="app-scroll nav-spacer" style={{ padding: isDesktop ? "0" : "0" }}>
 
-        {/* Trending Now Banner */}
-        {!isDesktop && (
-          <div style={{
-            margin: "16px 18px 0", padding: "14px 16px",
-            background: "linear-gradient(135deg, #2D2A26 0%, #4A453D 100%)",
-            borderRadius: 16, opacity: loaded ? 1 : 0,
-            animation: loaded ? "fadeUp 0.5s ease forwards" : "none",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-              <span style={{ fontSize: 14, animation: "pulse 2s ease infinite" }}>🔴</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#F7F5F0", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                Trending Now
-              </span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {TRENDING.map((item, i) => (
-                <div key={i} className="trending-item" style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px", borderRadius: 10 }}>
-                  <span style={{ fontSize: 20 }}>{item.emoji}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: "#F7F5F0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.title}</div>
-                    <div style={{ fontSize: 11, color: "#A09B94" }}>{item.artist}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "#F7F5F0" }}>+{item.count}</div>
-                    <div style={{ fontSize: 10, color: "#A09B94" }}>{item.time}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Section header — mobile only (desktop header is above) */}
         {!isDesktop && (
           <div style={{
@@ -261,6 +228,13 @@ export default function HomePage() {
         )}
 
         {/* Category Cards — 1-col on mobile/tablet, 2-col on desktop */}
+        {categories.length === 0 && loaded && (
+          <div style={{ textAlign: "center", padding: "60px 20px", color: "#A09B94" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🏛️</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6560" }}>No reactions yet</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}>Scan artworks and share how they make you feel!</div>
+          </div>
+        )}
         <div className="cards-grid" style={{ marginTop: isDesktop ? 24 : 0 }}>
           {categories.map((cat, i) => {
             const isFeatured = isDesktop && i === featuredIdx;
