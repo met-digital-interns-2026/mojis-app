@@ -305,7 +305,7 @@ export default function ScanPage() {
             </div>
 
             {/* Hint text */}
-            <div style={{ position: "absolute", bottom: 120, left: 0, right: 0, textAlign: "center", animation: "fadeIn 0.5s ease" }}>
+            <div style={{ position: "absolute", bottom: 184, left: 0, right: 0, textAlign: "center", animation: "fadeIn 0.5s ease" }}>
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: 8,
                 padding: "8px 16px", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(10px)", borderRadius: 20,
@@ -318,7 +318,7 @@ export default function ScanPage() {
             </div>
 
             {/* Capture button */}
-            <div style={{ position: "absolute", bottom: 32, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
+            <div style={{ position: "absolute", bottom: 96, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
               <button
                 className="capture-btn"
                 onClick={handleCapture}
@@ -505,9 +505,9 @@ function ResultCard({ artwork, rank, featured }) {
         borderRadius: 20, border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden",
       }}>
         {artwork.image && (
-          <div style={{ width: "100%", height: 180, overflow: "hidden", position: "relative" }}>
+          <div style={{ width: "100%", height: 260, overflow: "hidden", position: "relative", background: "#1a1a1a" }}>
             <img src={artwork.image} alt={artwork.title}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
               onError={(e) => { e.target.style.display = "none"; }}
             />
             <div style={{
@@ -586,7 +586,7 @@ function ResultCard({ artwork, rank, featured }) {
       }}>
         {artwork.image && (
           <img src={artwork.image} alt={artwork.title}
-            style={{ width: 56, height: 56, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
+            style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
             onError={(e) => { e.target.style.display = "none"; }}
           />
         )}

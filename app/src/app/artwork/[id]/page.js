@@ -10,8 +10,6 @@ import { fetchArtwork } from "../../lib/met-api";
 import { getArtwork, getReactionCounts, getMyReaction, saveReaction, getComments, addComment, upsertArtwork, getArtworkRankings } from "../../lib/db";
 import { getGuestId, getGuestName } from "../../lib/guest";
 import AuthModal from "../../components/AuthModal";
-import { getSession } from "../../lib/auth";
-import { isConnected } from "../../lib/supabase";
 
 // openCategory / onToggle ensure only one picker is open at a time
 function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCategory, onToggle }) {
@@ -239,7 +237,11 @@ export default function ArtDetailPage({ params }) {
       // Also try the Met API for extra fields (dimensions, description, etc.)
       const apiData = await fetchArtwork(id);
       if (!cancelled && apiData) {
-        setArtwork(prev => ({ ...prev, ...apiData }));
+        // Only merge non-null fields so we don't overwrite a valid DB image with null
+        const filtered = Object.fromEntries(
+          Object.entries(apiData).filter(([, v]) => v != null && v !== "")
+        );
+        setArtwork(prev => ({ ...prev, ...filtered }));
 
         // If this artwork isn't in the DB yet, insert it so reactions/comments work
         if (!dbArt) {
@@ -352,10 +354,6 @@ export default function ArtDetailPage({ params }) {
   };
 
   async function handleCommentButtonClick() {
-    if (isConnected()) {
-      const session = await getSession();
-      if (!session) { setShowAuthModal(true); return; }
-    }
     setShowCommentInput(true);
   }
 
