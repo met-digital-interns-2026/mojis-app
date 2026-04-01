@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import BottomNav from "../components/BottomNav";
+import TopNav from "../components/TopNav";
 import BookmarkButton from "../components/BookmarkButton";
 import { getArtworkRankings, getCommentHeartRankings } from "../lib/db";
 import { fixMetImageUrl } from "../lib/met-api";
@@ -64,8 +65,10 @@ export default function RankingsPage() {
         .podium-card:hover { transform: translateY(-3px); }
       `}</style>
 
-      {/* Header */}
-      <div style={{ padding: "56px 24px 0" }}>
+      <TopNav />
+
+      {/* Page title + tabs */}
+      <div style={{ padding: "8px 24px 0" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>
           Rankings
         </h1>

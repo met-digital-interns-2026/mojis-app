@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import BottomNav from "../components/BottomNav";
+import TopNav from "../components/TopNav";
 import { getGuestId, getGuestName, setUsername, getAvatar, setAvatar, getBio, setBio, getFavorites, saveFavorites } from "../lib/guest";
 import { getSession, signOut, onAuthChange } from "../lib/auth";
 import { isConnected } from "../lib/supabase";
@@ -256,9 +257,11 @@ export default function ProfilePage() {
         input:focus, textarea:focus { outline: none; }
       `}</style>
 
-      {/* Header */}
+      <TopNav />
+
+      {/* Page title + edit controls */}
       <div style={{
-        padding: "56px 24px 0",
+        padding: "8px 24px 0",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>Profile</h1>

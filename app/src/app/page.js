@@ -3,11 +3,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import BottomNav from "./components/BottomNav";
 import BookmarkButton from "./components/BookmarkButton";
 import CommentsSection from "./components/CommentsSection";
-import { getAvatar } from "./lib/guest";
+import TopNav from "./components/TopNav";
 import { getTopByCategory } from "./lib/db";
 import { fixMetImageUrl } from "./lib/met-api";
 
@@ -37,8 +36,6 @@ const CATEGORY_DISPLAY = {
 export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
   const [expandedCard, setExpandedCard] = useState(null);
-  const [headerScrolled, setHeaderScrolled] = useState(false);
-  const [avatar, setAvatar] = useState("👤");
   const [isDesktop, setIsDesktop] = useState(false);
   const [categories, setCategories] = useState([]);
   const [featuredIdx, setFeaturedIdx] = useState(0);
@@ -73,23 +70,13 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoaded(true);
-    setAvatar(getAvatar());
 
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
     checkDesktop();
     window.addEventListener("resize", checkDesktop);
 
-    const handleScroll = (e) => {
-      setHeaderScrolled((e.target.scrollTop ?? window.scrollY) > 40);
-    };
-    const el = document.querySelector(".app-scroll");
-    if (el) el.addEventListener("scroll", handleScroll);
-    window.addEventListener("scroll", handleScroll);
-
     return () => {
       window.removeEventListener("resize", checkDesktop);
-      el?.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
@@ -137,54 +124,14 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* Header — hidden on desktop (sidebar has the logo) */}
-      {!isDesktop && (
-        <div style={{
-          padding: "16px 20px 8px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexShrink: 0,
-          transition: "all 0.3s ease",
-          borderBottom: headerScrolled ? "1px solid rgba(0,0,0,0.06)" : "1px solid transparent",
-          background: headerScrolled ? "rgba(247,245,240,0.95)" : "transparent",
-          backdropFilter: headerScrolled ? "blur(10px)" : "none",
-          zIndex: 10,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10,
-              background: "linear-gradient(135deg, #2D2A26 0%, #5C574E 100%)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-            }}>🏛️</div>
-            <div>
-              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#2D2A26", lineHeight: 1.1 }}>
-                Moji Museum
-              </div>
-              <div style={{ fontSize: 11, color: "#8C8580", fontWeight: 400, letterSpacing: "0.02em" }}>
-                The Met
-              </div>
-            </div>
-          </div>
-          <Link href="/profile" style={{ textDecoration: "none" }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: "50%", background: "#EDEAE4",
-              overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 18, cursor: "pointer", flexShrink: 0,
-            }}>
-              {avatar.startsWith("http") ? (
-                <Image src={avatar} alt="avatar" width={36} height={36}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
-              ) : avatar}
-            </div>
-          </Link>
-        </div>
-      )}
+      {/* Header */}
+      {!isDesktop && <TopNav />}
 
-      {/* Desktop page header */}
+      {/* Desktop: TopNav + page header */}
       {isDesktop && (
-        <div style={{ padding: "36px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div>
+        <>
+          <TopNav />
+          <div style={{ padding: "12px 28px 0" }}>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>
               Top Reactions
             </h1>
@@ -192,19 +139,7 @@ export default function HomePage() {
               Most reacted artworks at The Met this week
             </p>
           </div>
-          <Link href="/profile" style={{ textDecoration: "none" }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: "50%", background: "#EDEAE4",
-              overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 22, cursor: "pointer", flexShrink: 0,
-            }}>
-              {avatar.startsWith("http") ? (
-                <Image src={avatar} alt="avatar" width={44} height={44}
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
-              ) : avatar}
-            </div>
-          </Link>
-        </div>
+        </>
       )}
 
       {/* Scrollable Content */}
@@ -215,8 +150,7 @@ export default function HomePage() {
           <div style={{
             padding: "24px 20px 12px", display: "flex", justifyContent: "space-between", alignItems: "baseline",
             opacity: loaded ? 1 : 0,
-            animation: loaded ? "fadeUp 0.5s ease 0.2s forwards" : "none",
-            animationFillMode: "backwards",
+            animation: loaded ? "fadeUp 0.5s ease 0.2s backwards" : "none",
           }}>
             <div>
               <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: "#2D2A26", letterSpacing: "-0.01em" }}>

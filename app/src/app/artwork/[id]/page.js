@@ -243,10 +243,8 @@ export default function ArtDetailPage({ params }) {
         );
         setArtwork(prev => ({ ...prev, ...filtered }));
 
-        // If this artwork isn't in the DB yet, insert it so reactions/comments work
-        if (!dbArt) {
-          await upsertArtwork(apiData);
-        }
+        // Always update DB with fresh API data (keeps image URLs current)
+        await upsertArtwork({ ...dbArt, ...filtered });
       }
 
       // Load reaction counts from DB

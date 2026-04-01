@@ -489,7 +489,7 @@ export default function ScanPage() {
   );
 }
 
-// Uniform result card — image on left, info on right, tappable
+// Result card — large image on top for easy visual matching, info below
 function ResultCard({ artwork, rank }) {
   const scoreColor = artwork.score >= 0.9 ? "#81C784" : artwork.score >= 0.8 ? "#FFD54F" : "#FFB74D";
   const scorePct = Math.round(artwork.score * 100);
@@ -499,13 +499,12 @@ function ResultCard({ artwork, rank }) {
       <div className="view-btn" style={{
         background: "rgba(15,15,15,0.75)", backdropFilter: "blur(24px)",
         borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)",
-        padding: 10, display: "flex", gap: 12, alignItems: "stretch",
+        overflow: "hidden",
       }}>
-        {/* Artwork image — large, uncropped, no overlay */}
+        {/* Artwork image — full width, tall, for easy visual matching */}
         {artwork.image && (
           <div style={{
-            width: 140, minHeight: 140, flexShrink: 0,
-            borderRadius: 10, overflow: "hidden",
+            width: "100%", height: 220,
             background: "#1a1a1a",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
@@ -516,47 +515,38 @@ function ResultCard({ artwork, rank }) {
           </div>
         )}
 
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
-          {/* Score badge */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 4, alignSelf: "flex-start",
-            padding: "3px 8px", borderRadius: 8,
-            background: `${scoreColor}18`, border: `1px solid ${scoreColor}40`,
-          }}>
-            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 700, color: scoreColor }}>
-              {scorePct}% match
-            </span>
-          </div>
-
-          {/* Title */}
-          <div style={{
-            fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700,
-            color: "#FFF", lineHeight: 1.25,
-            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-          }}>
-            {artwork.title}
-          </div>
-
-          {/* Artist */}
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
-            {artwork.artist}{artwork.dated ? `, ${artwork.dated}` : ""}
-          </div>
-
-          {/* Location / department */}
-          {(artwork.department || artwork.gallery) && (
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
-              📍 {[artwork.gallery, artwork.department].filter(Boolean).join(" · ")}
+        {/* Info row */}
+        <div style={{ padding: "10px 14px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700,
+              color: "#FFF", lineHeight: 1.25,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {artwork.title}
             </div>
-          )}
-        </div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginTop: 2 }}>
+              {artwork.artist}{artwork.dated ? `, ${artwork.dated}` : ""}
+            </div>
+            {(artwork.department || artwork.gallery) && (
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 3 }}>
+                📍 {[artwork.gallery, artwork.department].filter(Boolean).join(" · ")}
+              </div>
+            )}
+          </div>
 
-        {/* Arrow indicator */}
-        <div style={{
-          display: "flex", alignItems: "center", flexShrink: 0,
-          fontSize: 16, color: "rgba(255,255,255,0.25)", paddingRight: 4,
-        }}>
-          →
+          {/* Score badge + arrow */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+            <div style={{
+              padding: "4px 10px", borderRadius: 10,
+              background: `${scoreColor}18`, border: `1px solid ${scoreColor}40`,
+            }}>
+              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, fontWeight: 700, color: scoreColor }}>
+                {scorePct}%
+              </span>
+            </div>
+            <span style={{ fontSize: 16, color: "rgba(255,255,255,0.25)" }}>→</span>
+          </div>
         </div>
       </div>
     </Link>

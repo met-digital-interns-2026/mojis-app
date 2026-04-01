@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import BottomNav from "../components/BottomNav";
+import TopNav from "../components/TopNav";
 import { getAllArtworks } from "../lib/db";
 import { fixMetImageUrl } from "../lib/met-api";
 
@@ -39,8 +40,10 @@ export default function GalleryPage() {
         .gallery-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
       `}</style>
 
-      {/* Header */}
-      <div style={{ padding: "56px 24px 0" }}>
+      <TopNav />
+
+      {/* Page title + filters */}
+      <div style={{ padding: "8px 24px 0" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>
           Gallery
         </h1>
