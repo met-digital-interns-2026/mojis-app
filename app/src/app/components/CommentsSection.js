@@ -5,7 +5,7 @@
 import { useEffect, useState } from "react";
 import SpeechBubble from "./SpeechBubble";
 import { addComment, getComments, getMyLikes, toggleLike } from "../lib/db";
-import { getGuestId, getGuestName } from "../lib/guest";
+import { getGuestName } from "../lib/guest";
 import { isConnected } from "../lib/supabase";
 
 function collectCommentIds(comments) {
@@ -57,7 +57,7 @@ export default function CommentsSection({
       }
 
       const commentIds = collectCommentIds(dbComments);
-      const myLikes = await getMyLikes(commentIds, getGuestId());
+      const myLikes = await getMyLikes(commentIds);
       if (cancelled) {
         return;
       }
@@ -83,7 +83,7 @@ export default function CommentsSection({
     }
 
     const commentIds = collectCommentIds(dbComments);
-    const myLikes = await getMyLikes(commentIds, getGuestId());
+    const myLikes = await getMyLikes(commentIds);
     setStoredComments(dbComments);
     setLikedCommentIds(myLikes);
     return true;
@@ -118,7 +118,6 @@ export default function CommentsSection({
 
     const saved = await addComment(
       artworkId,
-      getGuestId(),
       getGuestName(),
       commentEmoji,
       text,
@@ -151,7 +150,7 @@ export default function CommentsSection({
     setPending(true);
     setError("");
 
-    const result = await toggleLike(comment.id, getGuestId());
+    const result = await toggleLike(comment.id);
     if (!result) {
       setError("Could not update that like. Try again.");
       setPending(false);

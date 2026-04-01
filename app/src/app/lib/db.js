@@ -10,6 +10,16 @@
 
 import { supabase, isConnected } from "./supabase";
 
+async function parseApiResponse(response) {
+  const body = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(body.error || `Request failed (${response.status})`);
+  }
+
+  return body;
+}
+
 // ==================
 // ARTWORKS
 // ==================
@@ -382,27 +392,21 @@ export async function getAllArtworks(department = null) {
 export async function upsertArtwork(artwork) {
   if (!isConnected()) return null;
 
-  const { error } = await supabase
-    .from("artworks")
-    .upsert({
-      id: artwork.id,
-      title: artwork.title,
-      artist: artwork.artist,
-      year: artwork.year || artwork.dated || null,
-      image: artwork.image,
-      medium: artwork.medium || null,
-      department: artwork.department || null,
-      gallery: artwork.gallery || null,
-      fact: artwork.fact || null,
-    }, {
-      onConflict: "id",
-    });
-
-  if (error) {
+  try {
+    await parseApiResponse(
+      await fetch("/api/artworks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(artwork),
+      })
+    );
+    return true;
+  } catch (error) {
     console.error("Error upserting artwork:", error);
     return false;
   }
-  return true;
 }
 
 // ==================
@@ -434,45 +438,42 @@ export async function getReactionCounts(artworkId) {
 
 // Get the current user's reaction to an artwork (if any).
 // Returns something like: { category: "sad", level: 5, emoji: "😭" }
-export async function getMyReaction(artworkId, guestId) {
+export async function getMyReaction(artworkId) {
   if (!isConnected()) return null;
 
-  const { data, error } = await supabase
-    .from("reactions")
-    .select("category, level, emoji")
-    .eq("artwork_id", artworkId)
-    .eq("guest_id", guestId)
-    .maybeSingle(); // returns null if no match (instead of error)
-
-  if (error) {
+  try {
+    const body = await parseApiResponse(
+      await fetch(`/api/reactions/${artworkId}`, {
+        cache: "no-store",
+      })
+    );
+    return body.reaction ?? null;
+  } catch (error) {
     console.error("Error fetching my reaction:", error);
     return null;
   }
-  return data;
 }
 
 // Save or update the user's reaction to an artwork.
 // "upsert" means "insert if new, update if exists" — like "save".
-export async function saveReaction(artworkId, guestId, category, level, emoji) {
+export async function saveReaction(artworkId, category, level, emoji) {
   if (!isConnected()) return null;
 
-  const { error } = await supabase
-    .from("reactions")
-    .upsert({
-      artwork_id: artworkId,
-      guest_id: guestId,
-      category,
-      level,
-      emoji,
-    }, {
-      onConflict: "artwork_id,guest_id", // if this combo exists, update it
-    });
-
-  if (error) {
+  try {
+    await parseApiResponse(
+      await fetch(`/api/reactions/${artworkId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ category, level, emoji }),
+      })
+    );
+    return true;
+  } catch (error) {
     console.error("Error saving reaction:", error);
     return false;
   }
-  return true;
 }
 
 // ==================
@@ -484,95 +485,43 @@ export async function saveReaction(artworkId, guestId, category, level, emoji) {
 export async function getComments(artworkId) {
   if (!isConnected()) return null;
 
-  // Get all comments for this artwork, newest first
-  const { data, error } = await supabase
-    .from("comments")
-    .select("*")
-    .eq("artwork_id", artworkId)
-    .order("created_at", { ascending: true });
-
-  if (error) {
+  try {
+    const body = await parseApiResponse(
+      await fetch(`/api/comments/${artworkId}`, {
+        cache: "no-store",
+      })
+    );
+    return body.comments ?? [];
+  } catch (error) {
     console.error("Error fetching comments:", error);
     return null;
   }
-
-  // Get like counts for each comment
-  const commentIds = data.map(c => c.id);
-  let likeCounts = {};
-
-  if (commentIds.length > 0) {
-    const { data: likes, error: likesError } = await supabase
-      .from("comment_likes")
-      .select("comment_id")
-      .in("comment_id", commentIds);
-
-    if (!likesError && likes) {
-      for (const like of likes) {
-        likeCounts[like.comment_id] = (likeCounts[like.comment_id] || 0) + 1;
-      }
-    }
-  }
-
-  // Organize into a tree: top-level comments with nested replies
-  const topLevel = [];
-  const replyMap = {};
-
-  for (const comment of data) {
-    const formatted = {
-      id: comment.id,
-      user: comment.guest_name,
-      emoji: comment.emoji,
-      text: comment.text,
-      likes: likeCounts[comment.id] || 0,
-      replyTo: null,
-      replies: [],
-      createdAt: comment.created_at,
-    };
-
-    if (comment.parent_id) {
-      // This is a reply — find the parent comment's user name
-      const parent = data.find(c => c.id === comment.parent_id);
-      formatted.replyTo = parent ? parent.guest_name : null;
-
-      if (!replyMap[comment.parent_id]) {
-        replyMap[comment.parent_id] = [];
-      }
-      replyMap[comment.parent_id].push(formatted);
-    } else {
-      topLevel.push(formatted);
-    }
-  }
-
-  // Attach replies to their parent comments
-  for (const comment of topLevel) {
-    comment.replies = replyMap[comment.id] || [];
-  }
-
-  return topLevel;
 }
 
 // Add a new comment (or reply).
-export async function addComment(artworkId, guestId, guestName, emoji, text, parentId = null) {
+export async function addComment(artworkId, guestName, emoji, text, parentId = null) {
   if (!isConnected()) return null;
 
-  const { data, error } = await supabase
-    .from("comments")
-    .insert({
-      artwork_id: artworkId,
-      guest_id: guestId,
-      guest_name: guestName,
-      emoji,
-      text,
-      parent_id: parentId,
-    })
-    .select()
-    .single();
-
-  if (error) {
+  try {
+    const body = await parseApiResponse(
+      await fetch(`/api/comments/${artworkId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          guestName,
+          emoji,
+          text,
+          parentId,
+        }),
+      })
+    );
+    return body.comment ?? true;
+  } catch (error) {
     console.error("Error adding comment:", error);
     return null;
   }
-  return data;
 }
 
 // ==================
@@ -580,44 +529,38 @@ export async function addComment(artworkId, guestId, guestName, emoji, text, par
 // ==================
 
 // Toggle a like on a comment. Returns { liked: true/false, newCount: number }
-export async function toggleLike(commentId, guestId) {
+export async function toggleLike(commentId) {
   if (!isConnected()) return null;
 
-  // Check if already liked
-  const { data: existing } = await supabase
-    .from("comment_likes")
-    .select("comment_id")
-    .eq("comment_id", commentId)
-    .eq("guest_id", guestId)
-    .maybeSingle();
-
-  if (existing) {
-    // Unlike
-    await supabase
-      .from("comment_likes")
-      .delete()
-      .eq("comment_id", commentId)
-      .eq("guest_id", guestId);
-    return { liked: false };
-  } else {
-    // Like
-    await supabase
-      .from("comment_likes")
-      .insert({ comment_id: commentId, guest_id: guestId });
-    return { liked: true };
+  try {
+    const body = await parseApiResponse(
+      await fetch(`/api/comment-likes/${commentId}`, {
+        method: "POST",
+      })
+    );
+    return { liked: body.liked };
+  } catch (error) {
+    console.error("Error toggling like:", error);
+    return null;
   }
 }
 
 // Check which comments the current guest has liked
-export async function getMyLikes(commentIds, guestId) {
+export async function getMyLikes(commentIds) {
   if (!isConnected() || commentIds.length === 0) return new Set();
 
-  const { data, error } = await supabase
-    .from("comment_likes")
-    .select("comment_id")
-    .in("comment_id", commentIds)
-    .eq("guest_id", guestId);
-
-  if (error) return new Set();
-  return new Set(data.map(d => d.comment_id));
+  try {
+    const body = await parseApiResponse(
+      await fetch("/api/comment-likes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ commentIds }),
+      })
+    );
+    return new Set(body.likedCommentIds || []);
+  } catch {
+    return new Set();
+  }
 }

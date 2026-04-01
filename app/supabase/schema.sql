@@ -97,23 +97,24 @@ ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comment_likes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can read artworks" ON artworks;
+DROP POLICY IF EXISTS "Anyone can read reactions" ON reactions;
+DROP POLICY IF EXISTS "Anyone can read comments" ON comments;
+DROP POLICY IF EXISTS "Anyone can read likes" ON comment_likes;
+DROP POLICY IF EXISTS "Anyone can insert artworks" ON artworks;
+DROP POLICY IF EXISTS "Anyone can insert reactions" ON reactions;
+DROP POLICY IF EXISTS "Anyone can insert comments" ON comments;
+DROP POLICY IF EXISTS "Anyone can insert likes" ON comment_likes;
+DROP POLICY IF EXISTS "Anyone can update artworks" ON artworks;
+DROP POLICY IF EXISTS "Users can update own reactions" ON reactions;
+DROP POLICY IF EXISTS "Users can delete own likes" ON comment_likes;
+
 -- Anyone can read everything
 CREATE POLICY "Anyone can read artworks" ON artworks FOR SELECT USING (true);
 CREATE POLICY "Anyone can read reactions" ON reactions FOR SELECT USING (true);
 CREATE POLICY "Anyone can read comments" ON comments FOR SELECT USING (true);
 CREATE POLICY "Anyone can read likes" ON comment_likes FOR SELECT USING (true);
 
--- Anyone can insert (we're using anonymous/guest access)
-CREATE POLICY "Anyone can insert artworks" ON artworks FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can insert reactions" ON reactions FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can insert comments" ON comments FOR INSERT WITH CHECK (true);
-CREATE POLICY "Anyone can insert likes" ON comment_likes FOR INSERT WITH CHECK (true);
-
--- Anyone can update artworks (upsert needs both INSERT and UPDATE)
-CREATE POLICY "Anyone can update artworks" ON artworks FOR UPDATE USING (true);
-
--- Users can update their own reactions (change emoji)
-CREATE POLICY "Users can update own reactions" ON reactions FOR UPDATE USING (true);
-
--- Users can delete their own likes (unlike)
-CREATE POLICY "Users can delete own likes" ON comment_likes FOR DELETE USING (true);
+-- Client writes are intentionally blocked.
+-- Reactions, comments, likes, and artwork upserts now go through server routes
+-- with a signed guest cookie plus the Supabase service role key.

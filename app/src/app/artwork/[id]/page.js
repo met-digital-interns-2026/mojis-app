@@ -9,7 +9,6 @@ import CommentsSection from "../../components/CommentsSection";
 import { EMOJI_CATEGORIES } from "../../data/artworks";
 import { fetchArtwork, fixMetImageUrl } from "../../lib/met-api";
 import { getArtwork, getReactionCounts, getMyReaction, saveReaction, upsertArtwork, getArtworkRankings } from "../../lib/db";
-import { getGuestId } from "../../lib/guest";
 
 // openCategory / onToggle ensure only one picker is open at a time
 function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCategory, onToggle }) {
@@ -155,8 +154,7 @@ export default function ArtDetailPage({ params }) {
   useEffect(() => {
     let cancelled = false;
     async function loadDbData() {
-      const guestId = getGuestId();
-      const myReaction = await getMyReaction(id, guestId);
+      const myReaction = await getMyReaction(id);
       if (!cancelled && myReaction) {
         setSelectedReaction(myReaction);
       }
@@ -174,8 +172,7 @@ export default function ArtDetailPage({ params }) {
     }
 
     // Save to database
-    const guestId = getGuestId();
-    await saveReaction(id, guestId, category, level, emoji);
+    await saveReaction(id, category, level, emoji);
 
     // Refresh counts
     const counts = await getReactionCounts(id);
