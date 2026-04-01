@@ -282,7 +282,7 @@ export default function ProfilePage() {
         )}
       </div>
 
-      <div style={{ flex: 1, padding: "24px 24px 100px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ flex: 1, padding: "24px 24px", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* Avatar + name card */}
         <div className="profile-card" style={{

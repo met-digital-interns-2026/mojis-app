@@ -5,6 +5,10 @@ export const metadata = {
   description: "React to art with emojis at The Met",
 };
 
+export const viewport = {
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full antialiased">

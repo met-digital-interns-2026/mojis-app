@@ -136,7 +136,7 @@ export default function BottomNav({ variant = "light" }) {
       transform: "translateX(-50%)",
       width: "100%",
       maxWidth: 680,
-      height: 80,
+      height: "calc(80px + env(safe-area-inset-bottom, 0px))",
       background: bgColor,
       backdropFilter: "blur(20px)",
       borderTop: `1px solid ${borderColor}`,
@@ -144,6 +144,7 @@ export default function BottomNav({ variant = "light" }) {
       justifyContent: "space-around",
       alignItems: "flex-start",
       paddingTop: 8,
+      paddingBottom: "env(safe-area-inset-bottom, 0px)",
       zIndex: 20,
     }}>
       {TABS.map(tab => (

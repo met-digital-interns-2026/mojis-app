@@ -401,7 +401,7 @@ export default function ArtDetailPage({ params }) {
       </div>
 
       {/* Scrollable Content */}
-      <div className="hide-scrollbar" style={{ flex: 1, overflowY: "auto", paddingBottom: 100 }}>
+      <div className="hide-scrollbar" style={{ flex: 1, overflowY: "auto", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))" }}>
 
         {/* Hero Image — uncropped, full artwork visible */}
         <div style={{

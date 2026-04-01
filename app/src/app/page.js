@@ -129,7 +129,7 @@ export default function HomePage() {
         .emoji-pill:hover { transform: scale(1.1); }
         .trending-item { transition: all 0.2s ease; cursor: pointer; }
         .trending-item:active { transform: scale(0.98); background: rgba(0,0,0,0.04); }
-        .app-scroll { overflow-y: auto; flex: 1; }
+        .app-scroll { overflow-y: auto; flex: 1; padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
         .app-scroll::-webkit-scrollbar { display: none; }
         @media (min-width: 1024px) {
           .app-scroll { overflow-y: visible; flex: none; }

@@ -82,7 +82,7 @@ export default function ScanPage() {
       // Filter to results with a decent similarity score
       // Scores close to 1.0 are strong matches
       const goodMatches = matches.filter((m) => m.score >= 0.75);
-      const topResults = goodMatches.slice(0, 3);
+      const topResults = goodMatches.slice(0, 5);
 
       if (topResults.length > 0) {
         setResults(topResults);
@@ -115,7 +115,7 @@ export default function ScanPage() {
     try {
       const matches = await searchByImage(file);
       const goodMatches = matches.filter((m) => m.score >= 0.75);
-      const topResults = goodMatches.slice(0, 3);
+      const topResults = goodMatches.slice(0, 5);
 
       if (topResults.length > 0) {
         setResults(topResults);
@@ -382,9 +382,9 @@ export default function ScanPage() {
         {phase === "found" && results.length > 0 && (
           <div style={{
             position: "relative", zIndex: 10, width: "100%", height: "100%",
-            display: "flex", flexDirection: "column", justifyContent: "flex-end", overflow: "auto",
+            display: "flex", flexDirection: "column", overflow: "auto",
           }}>
-            <div style={{ padding: "0 18px 18px", animation: "slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+            <div style={{ padding: "12px 16px", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))", animation: "slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)" }}>
               {/* Match badge */}
               <div style={{
                 display: "inline-flex", alignItems: "center", gap: 6,
@@ -397,20 +397,15 @@ export default function ScanPage() {
                 </span>
               </div>
 
-              {/* Top result — featured card */}
-              <ResultCard artwork={results[0]} rank={1} featured />
-
-              {/* Additional results */}
-              {results.length > 1 && (
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-                  {results.slice(1).map((artwork, i) => (
-                    <ResultCard key={artwork.id || i} artwork={artwork} rank={i + 2} />
-                  ))}
-                </div>
-              )}
+              {/* All results — uniform cards */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {results.map((artwork, i) => (
+                  <ResultCard key={artwork.id || i} artwork={artwork} rank={i + 1} />
+                ))}
+              </div>
 
               <button className="scan-again-btn" onClick={handleScanAgain} style={{
-                width: "100%", marginTop: 10, padding: "12px", borderRadius: 14,
+                width: "100%", marginTop: 12, padding: "12px", borderRadius: 14,
                 background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)",
                 color: "rgba(255,255,255,0.5)", fontSize: 14, fontWeight: 500,
                 cursor: "pointer",
@@ -427,7 +422,7 @@ export default function ScanPage() {
             position: "relative", zIndex: 10, width: "100%", height: "100%",
             display: "flex", flexDirection: "column", justifyContent: "flex-end",
           }}>
-            <div style={{ padding: "0 18px 18px", animation: "slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+            <div style={{ padding: "0 18px", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))", animation: "slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)" }}>
               <div style={{
                 background: "rgba(15,15,15,0.75)", backdropFilter: "blur(24px)",
                 borderRadius: 20, border: "1px solid rgba(255,255,255,0.08)",
@@ -460,7 +455,7 @@ export default function ScanPage() {
             position: "relative", zIndex: 10, width: "100%", height: "100%",
             display: "flex", flexDirection: "column", justifyContent: "flex-end",
           }}>
-            <div style={{ padding: "0 18px 18px", animation: "slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)" }}>
+            <div style={{ padding: "0 18px", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))", animation: "slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1)" }}>
               <div style={{
                 background: "rgba(15,15,15,0.75)", backdropFilter: "blur(24px)",
                 borderRadius: 20, border: "1px solid rgba(255,255,255,0.08)",
@@ -494,121 +489,74 @@ export default function ScanPage() {
   );
 }
 
-// Result card component for displaying a matched artwork
-function ResultCard({ artwork, rank, featured }) {
+// Uniform result card — image on left, info on right, tappable
+function ResultCard({ artwork, rank }) {
   const scoreColor = artwork.score >= 0.9 ? "#81C784" : artwork.score >= 0.8 ? "#FFD54F" : "#FFB74D";
+  const scorePct = Math.round(artwork.score * 100);
 
-  if (featured) {
-    return (
-      <div style={{
+  return (
+    <Link href={`/artwork/${artwork.id}`} style={{ textDecoration: "none", display: "block" }}>
+      <div className="view-btn" style={{
         background: "rgba(15,15,15,0.75)", backdropFilter: "blur(24px)",
-        borderRadius: 20, border: "1px solid rgba(255,255,255,0.08)", overflow: "hidden",
+        borderRadius: 16, border: "1px solid rgba(255,255,255,0.08)",
+        padding: 10, display: "flex", gap: 12, alignItems: "stretch",
       }}>
+        {/* Artwork image — large, uncropped, no overlay */}
         {artwork.image && (
-          <div style={{ width: "100%", height: 260, overflow: "hidden", position: "relative", background: "#1a1a1a" }}>
+          <div style={{
+            width: 110, minHeight: 110, flexShrink: 0,
+            borderRadius: 10, overflow: "hidden",
+            background: "#1a1a1a",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
             <img src={artwork.image} alt={artwork.title}
               style={{ width: "100%", height: "100%", objectFit: "contain" }}
               onError={(e) => { e.target.style.display = "none"; }}
             />
-            <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0, height: 60,
-              background: "linear-gradient(transparent, rgba(15,15,15,0.9))",
-            }} />
-            {/* Score badge on image */}
-            <div style={{
-              position: "absolute", top: 12, right: 12,
-              padding: "4px 10px", borderRadius: 12,
-              background: "rgba(0,0,0,0.6)", backdropFilter: "blur(10px)",
-              border: `1px solid ${scoreColor}40`,
-            }}>
-              <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 600, color: scoreColor }}>
-                {Math.round(artwork.score * 100)}% match
-              </span>
-            </div>
           </div>
         )}
 
-        <div style={{ padding: "14px 18px 10px" }}>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#FFF", lineHeight: 1.2, marginBottom: 4 }}>
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: "center", gap: 4 }}>
+          {/* Score badge */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 4, alignSelf: "flex-start",
+            padding: "3px 8px", borderRadius: 8,
+            background: `${scoreColor}18`, border: `1px solid ${scoreColor}40`,
+          }}>
+            <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 700, color: scoreColor }}>
+              {scorePct}% match
+            </span>
+          </div>
+
+          {/* Title */}
+          <div style={{
+            fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700,
+            color: "#FFF", lineHeight: 1.25,
+            display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+          }}>
             {artwork.title}
-          </h2>
-          <div style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", marginBottom: 2 }}>
+          </div>
+
+          {/* Artist */}
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.3 }}>
             {artwork.artist}{artwork.dated ? `, ${artwork.dated}` : ""}
           </div>
+
+          {/* Location / department */}
           {(artwork.department || artwork.gallery) && (
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 5, marginTop: 8,
-              padding: "4px 10px", background: "rgba(255,255,255,0.08)", borderRadius: 12,
-            }}>
-              <span style={{ fontSize: 12 }}>📍</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>
-                {[artwork.gallery, artwork.department].filter(Boolean).join(" · ")}
-              </span>
-            </div>
-          )}
-          {artwork.culture && (
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 5, marginTop: 6, marginLeft: 6,
-              padding: "4px 10px", background: "rgba(255,255,255,0.08)", borderRadius: 12,
-            }}>
-              <span style={{ fontSize: 12 }}>🌍</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontWeight: 500 }}>
-                {artwork.culture}
-              </span>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+              📍 {[artwork.gallery, artwork.department].filter(Boolean).join(" · ")}
             </div>
           )}
         </div>
 
-        {/* View Details button */}
-        <div style={{ padding: "8px 18px 16px" }}>
-          <Link href={`/artwork/${artwork.id}`} className="view-btn" style={{
-            width: "100%", padding: "14px", borderRadius: 14,
-            background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
-            color: "#FFF", fontSize: 15, fontWeight: 700,
-            letterSpacing: "0.02em", boxShadow: "0 4px 20px rgba(193,71,111,0.35)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            textDecoration: "none",
-          }}>
-            View Details & React →
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Compact card for additional results
-  return (
-    <Link href={`/artwork/${artwork.id}`} style={{ textDecoration: "none" }}>
-      <div style={{
-        background: "rgba(15,15,15,0.65)", backdropFilter: "blur(20px)",
-        borderRadius: 16, border: "1px solid rgba(255,255,255,0.06)",
-        padding: 12, display: "flex", gap: 12, alignItems: "center",
-      }}>
-        {artwork.image && (
-          <img src={artwork.image} alt={artwork.title}
-            style={{ width: 80, height: 80, borderRadius: 10, objectFit: "cover", flexShrink: 0 }}
-            onError={(e) => { e.target.style.display = "none"; }}
-          />
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 600,
-            color: "#FFF", lineHeight: 1.2,
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
-            {artwork.title}
-          </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>
-            {artwork.artist}
-          </div>
-        </div>
+        {/* Arrow indicator */}
         <div style={{
-          padding: "4px 8px", borderRadius: 10,
-          background: "rgba(255,255,255,0.06)",
-          fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 600, color: scoreColor,
-          flexShrink: 0,
+          display: "flex", alignItems: "center", flexShrink: 0,
+          fontSize: 16, color: "rgba(255,255,255,0.25)", paddingRight: 4,
         }}>
-          {Math.round(artwork.score * 100)}%
+          →
         </div>
       </div>
     </Link>

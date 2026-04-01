@@ -80,7 +80,7 @@ export default function GalleryPage() {
       </div>
 
       {/* Gallery grid */}
-      <div style={{ flex: 1, padding: "20px 24px 100px" }}>
+      <div style={{ flex: 1, padding: "20px 24px", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))" }}>
         {loading ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#A09B94", fontSize: 14 }}>
             Loading artworks...

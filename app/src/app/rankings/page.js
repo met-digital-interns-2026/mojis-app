@@ -99,7 +99,7 @@ export default function RankingsPage() {
       </div>
 
       {/* Scrollable content */}
-      <div className="nav-spacer" style={{ flex: 1, padding: "24px 20px 0", display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className="nav-spacer" style={{ flex: 1, padding: "24px 20px", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 24 }}>
 
         {data.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 20px", color: "#A09B94" }}>
