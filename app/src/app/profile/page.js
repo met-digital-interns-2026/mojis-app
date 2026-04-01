@@ -8,6 +8,7 @@ import { getGuestId, getGuestName, setUsername, getAvatar, setAvatar, getBio, se
 import { getSession, signOut, onAuthChange } from "../lib/auth";
 import { isConnected } from "../lib/supabase";
 import { getArtworkRankings } from "../lib/db";
+import { fixMetImageUrl } from "../lib/met-api";
 import AuthModal from "../components/AuthModal";
 
 const BIO_LIMIT = 150;
@@ -56,9 +57,9 @@ function FavoriteCard({ fav, editing, onRemove, allArtworks }) {
           background: "#FFF", border: "1px solid rgba(0,0,0,0.08)",
           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
         }}>
-          <div style={{ height: 72, overflow: "hidden", background: "#E8E4DD" }}>
-            <Image src={item.image} alt={item.title} width={90} height={72}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
+          <div style={{ height: 72, overflow: "hidden", background: "#E8E4DD", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Image src={fixMetImageUrl(item.image)} alt={item.title} width={90} height={72}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }} unoptimized />
           </div>
           <div style={{ padding: "6px 7px 7px" }}>
             <div style={{

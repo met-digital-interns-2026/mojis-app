@@ -6,6 +6,7 @@ import Image from "next/image";
 import BottomNav from "../components/BottomNav";
 import BookmarkButton from "../components/BookmarkButton";
 import { getArtworkRankings, getCommentHeartRankings } from "../lib/db";
+import { fixMetImageUrl } from "../lib/met-api";
 
 const TABS = ["🔥 Most Reacted", "💬 Most Commented"];
 
@@ -123,15 +124,14 @@ export default function RankingsPage() {
               position: "relative",
             }}>
               {/* Image */}
-              <div style={{ height: 200, position: "relative", background: "#E8E4DD", overflow: "hidden" }}>
+              <div style={{ height: 200, position: "relative", background: "#E8E4DD", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Image
-                  src={top1.image}
+                  src={fixMetImageUrl(top1.image)}
                   alt={top1.title}
                   fill
-                  style={{ objectFit: "cover" }}
+                  style={{ objectFit: "contain" }}
                   unoptimized
                 />
-                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 40%, rgba(45,42,38,0.7))" }} />
                 {/* Medal badge */}
                 <div style={{
                   position: "absolute", top: 12, left: 12,
@@ -146,18 +146,18 @@ export default function RankingsPage() {
                 <div style={{ position: "absolute", top: 12, right: 12 }} onClick={e => e.preventDefault()}>
                   <BookmarkButton type="artwork" id={top1.id} size={34} />
                 </div>
-                {/* Title overlay */}
-                <div style={{ position: "absolute", bottom: 12, left: 14, right: 14 }}>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: "#FFF", lineHeight: 1.2, textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}>
-                    {top1.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 3 }}>
-                    {top1.artist}, {top1.year}
-                  </div>
+              </div>
+              {/* Title + artist below image */}
+              <div style={{ padding: "10px 14px 4px" }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: "#2D2A26", lineHeight: 1.2 }}>
+                  {top1.title}
+                </div>
+                <div style={{ fontSize: 12, color: "#6B6560", marginTop: 3 }}>
+                  {top1.artist}, {top1.year}
                 </div>
               </div>
               {/* Stats row */}
-              <div style={{ padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ padding: "6px 16px 10px", display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 20 }}>{metricIcon || top1.topEmoji}</span>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#2D2A26" }}>{fmt(top1.reactions)}</span>
                 <span style={{ fontSize: 12, color: "#A09B94" }}>{metricLabel}</span>
@@ -182,9 +182,8 @@ export default function RankingsPage() {
                   boxShadow: `0 2px 14px rgba(${idx === 0 ? "155,163,175" : "205,127,50"},0.15), 0 1px 3px rgba(0,0,0,0.05)`,
                   border: `1.5px solid ${idx === 0 ? "rgba(155,163,175,0.35)" : "rgba(205,127,50,0.3)"}`,
                 }}>
-                  <div style={{ height: 130, position: "relative", background: "#E8E4DD", overflow: "hidden" }}>
-                    <Image src={art.image} alt={art.title} fill style={{ objectFit: "cover" }} unoptimized />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 40%, rgba(45,42,38,0.65))" }} />
+                  <div style={{ height: 130, position: "relative", background: "#E8E4DD", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Image src={fixMetImageUrl(art.image)} alt={art.title} fill style={{ objectFit: "contain" }} unoptimized />
                     <div style={{
                       position: "absolute", top: 8, left: 8,
                       background: idx === 0 ? "rgba(155,163,175,0.9)" : "rgba(205,127,50,0.9)",
@@ -194,15 +193,14 @@ export default function RankingsPage() {
                       <span style={{ fontSize: 13 }}>{MEDALS[idx + 1]}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: "#FFF" }}>#{idx + 2}</span>
                     </div>
-                    <div style={{ position: "absolute", bottom: 8, left: 10, right: 10 }}>
-                      <div style={{
-                        fontSize: 12, fontWeight: 700, color: "#FFF", lineHeight: 1.3,
-                        display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-                        textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-                      }}>{art.title}</div>
-                    </div>
                   </div>
-                  <div style={{ padding: "8px 10px", display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ padding: "6px 10px 2px" }}>
+                    <div style={{
+                      fontSize: 12, fontWeight: 700, color: "#2D2A26", lineHeight: 1.3,
+                      display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
+                    }}>{art.title}</div>
+                  </div>
+                  <div style={{ padding: "4px 10px 8px", display: "flex", alignItems: "center", gap: 5 }}>
                     <span style={{ fontSize: 16 }}>{art.topEmoji}</span>
                     <span style={{ fontSize: 13, fontWeight: 700, color: "#2D2A26" }}>{fmt(art.reactions)}</span>
                     <div style={{ marginLeft: "auto" }} onClick={e => e.preventDefault()}>
@@ -239,9 +237,9 @@ export default function RankingsPage() {
                   </div>
 
                   {/* Artwork thumbnail */}
-                  <div style={{ width: 52, height: 52, borderRadius: 12, overflow: "hidden", flexShrink: 0, background: "#E8E4DD" }}>
-                    <Image src={art.image} alt={art.title} width={52} height={52}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }} unoptimized />
+                  <div style={{ width: 52, height: 52, borderRadius: 12, overflow: "hidden", flexShrink: 0, background: "#E8E4DD", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Image src={fixMetImageUrl(art.image)} alt={art.title} width={52} height={52}
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }} unoptimized />
                   </div>
 
                   {/* Title + artist */}

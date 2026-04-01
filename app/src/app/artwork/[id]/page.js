@@ -6,7 +6,7 @@ import Link from "next/link";
 import BottomNav from "../../components/BottomNav";
 import BookmarkButton from "../../components/BookmarkButton";
 import { EMOJI_CATEGORIES } from "../../data/artworks";
-import { fetchArtwork } from "../../lib/met-api";
+import { fetchArtwork, fixMetImageUrl } from "../../lib/met-api";
 import { getArtwork, getReactionCounts, getMyReaction, saveReaction, getComments, addComment, upsertArtwork, getArtworkRankings } from "../../lib/db";
 import { getGuestId, getGuestName } from "../../lib/guest";
 import AuthModal from "../../components/AuthModal";
@@ -416,7 +416,7 @@ export default function ArtDetailPage({ params }) {
           justifyContent: "center",
         }}>
           {artwork.image ? (
-            <img src={artwork.image} alt={artwork.title}
+            <img src={fixMetImageUrl(artwork.image)} alt={artwork.title}
               style={{
                 maxWidth: "100%",
                 maxHeight: "50vh",
@@ -427,10 +427,6 @@ export default function ArtDetailPage({ params }) {
           ) : (
             <div style={{ fontSize: 48, color: "#C4BDB6", padding: "40px 0" }}>🖼️</div>
           )}
-          <div style={{
-            position: "absolute", bottom: 0, left: 0, right: 0, height: 40,
-            background: "linear-gradient(transparent, #F7F5F0)",
-          }} />
         </div>
 
         {/* Artwork Info */}
@@ -633,9 +629,9 @@ export default function ArtDetailPage({ params }) {
                     animation: `fadeUp 0.4s ease ${0.35 + i * 0.08}s backwards`,
                     boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
                   }}>
-                    <div style={{ width: "100%", height: 105, overflow: "hidden", position: "relative", background: "#E8E4DD" }}>
-                      <img src={art.image} alt={art.title}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    <div style={{ width: "100%", height: 105, overflow: "hidden", position: "relative", background: "#E8E4DD", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img src={fixMetImageUrl(art.image)} alt={art.title}
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
                         onError={(e) => { e.target.style.display = "none"; }}
                       />
                       <div style={{

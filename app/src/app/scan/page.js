@@ -504,7 +504,7 @@ function ResultCard({ artwork, rank }) {
         {/* Artwork image — large, uncropped, no overlay */}
         {artwork.image && (
           <div style={{
-            width: 110, minHeight: 110, flexShrink: 0,
+            width: 140, minHeight: 140, flexShrink: 0,
             borderRadius: 10, overflow: "hidden",
             background: "#1a1a1a",
             display: "flex", alignItems: "center", justifyContent: "center",

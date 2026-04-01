@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import BottomNav from "../components/BottomNav";
 import { getAllArtworks } from "../lib/db";
+import { fixMetImageUrl } from "../lib/met-api";
 
 export default function GalleryPage() {
   const [artworks, setArtworks] = useState([]);
@@ -133,14 +134,15 @@ export default function GalleryPage() {
                   <div style={{
                     height: 160, overflow: "hidden", background: "#E8E4DD",
                     position: "relative",
+                    display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
                     {art.image ? (
                       <Image
-                        src={art.image}
+                        src={fixMetImageUrl(art.image)}
                         alt={art.title}
                         width={200}
                         height={160}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{ width: "100%", height: "100%", objectFit: "contain" }}
                         unoptimized
                       />
                     ) : (

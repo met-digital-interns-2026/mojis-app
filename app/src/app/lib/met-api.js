@@ -16,6 +16,12 @@
 
 const BASE_URL = "https://collectionapi.metmuseum.org/public/collection/v1";
 
+// Fix Met image URLs: /original/ paths often 404, /web-large/ works reliably.
+export function fixMetImageUrl(url) {
+  if (!url || typeof url !== "string") return url;
+  return url.replace("/original/", "/web-large/");
+}
+
 // Fetch one artwork by its Met object ID.
 // Returns a simplified object with just the fields we need,
 // or null if the artwork doesn't exist.
@@ -38,7 +44,7 @@ export async function fetchArtwork(objectId) {
       dimensions: data.dimensions || "",
       gallery: data.GalleryNumber ? `Gallery ${data.GalleryNumber}` : null,
       department: data.department || "",
-      image: data.primaryImage || data.primaryImageSmall || null,
+      image: data.primaryImageSmall || data.primaryImage || null,
       description: buildDescription(data),
     };
   } catch (error) {

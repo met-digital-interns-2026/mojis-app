@@ -9,6 +9,7 @@ import BookmarkButton from "./components/BookmarkButton";
 import CommentsSection from "./components/CommentsSection";
 import { getAvatar } from "./lib/guest";
 import { getTopByCategory } from "./lib/db";
+import { fixMetImageUrl } from "./lib/met-api";
 
 // Category whose comments have the most total likes — shown as a featured wide card on desktop
 function totalCommentLikes(cat) {
@@ -265,25 +266,24 @@ export default function HomePage() {
 
                 {/* Artwork Preview */}
                 <Link href={`/artwork/${cat.artwork.id}`} style={{ textDecoration: "none" }}>
-                  <div style={{ position: "relative", height: 200, overflow: "hidden", background: "#E8E4DD" }}>
+                  <div style={{ position: "relative", overflow: "hidden", background: "#E8E4DD" }}>
                     <img
                       className="artwork-img"
-                      src={cat.artwork.image}
+                      src={fixMetImageUrl(cat.artwork.image)}
                       alt={cat.artwork.title}
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      style={{ width: "100%", maxHeight: 280, objectFit: "contain", display: "block" }}
                       onError={(e) => { e.target.style.display = "none"; }}
                     />
                     <div style={{ position: "absolute", top: 10, right: 10, zIndex: 5 }} onClick={e => e.stopPropagation()}>
                       <BookmarkButton type="artwork" id={cat.artwork.id} size={32} />
                     </div>
-                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 100, background: "linear-gradient(transparent, rgba(45,42,38,0.75))" }} />
-                    <div style={{ position: "absolute", bottom: 12, left: 14, right: 14 }}>
-                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: "#FFF", lineHeight: 1.2, textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
-                        {cat.artwork.title}
-                      </div>
-                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>
-                        {cat.artwork.artist}, {cat.artwork.year}
-                      </div>
+                  </div>
+                  <div style={{ padding: "10px 14px 0" }}>
+                    <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 700, color: "#2D2A26", lineHeight: 1.2 }}>
+                      {cat.artwork.title}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#6B6560", marginTop: 2 }}>
+                      {cat.artwork.artist}, {cat.artwork.year}
                     </div>
                   </div>
                 </Link>
