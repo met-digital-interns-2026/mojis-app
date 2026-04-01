@@ -36,7 +36,9 @@ const CATEGORY_DISPLAY = {
 export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
   const [expandedCard, setExpandedCard] = useState(null);
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 1024
+  );
   const [categories, setCategories] = useState([]);
   const [featuredIdx, setFeaturedIdx] = useState(0);
 
@@ -69,13 +71,15 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    setLoaded(true);
+    const frameId = window.requestAnimationFrame(() => {
+      setLoaded(true);
+    });
 
     const checkDesktop = () => setIsDesktop(window.innerWidth >= 1024);
-    checkDesktop();
     window.addEventListener("resize", checkDesktop);
 
     return () => {
+      window.cancelAnimationFrame(frameId);
       window.removeEventListener("resize", checkDesktop);
     };
   }, []);
@@ -245,7 +249,11 @@ export default function HomePage() {
 
                 {/* Comments */}
                 {cat.artwork.comments?.length > 0 && (
-                  <CommentsSection comments={cat.artwork.comments} color={cat.color} />
+                  <CommentsSection
+                    artworkId={cat.artwork.id}
+                    comments={cat.artwork.comments}
+                    color={cat.color}
+                  />
                 )}
               </>
             );

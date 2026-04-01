@@ -273,11 +273,13 @@ export async function getTopByCategory() {
     const replyMap = {};
     for (const c of artworkComments) {
       const formatted = {
+        id: c.id,
         user: c.guest_name,
         emoji: c.emoji,
         text: c.text,
         likes: likeCounts[c.id] || 0,
         replies: [],
+        createdAt: c.created_at,
       };
       if (c.parent_id) {
         const parent = artworkComments.find(p => p.id === c.parent_id);
@@ -285,13 +287,11 @@ export async function getTopByCategory() {
         if (!replyMap[c.parent_id]) replyMap[c.parent_id] = [];
         replyMap[c.parent_id].push(formatted);
       } else {
-        formatted.id = c.id;
         topLevel.push(formatted);
       }
     }
     for (const comment of topLevel) {
       comment.replies = replyMap[comment.id] || [];
-      delete comment.id;
     }
     return topLevel;
   }

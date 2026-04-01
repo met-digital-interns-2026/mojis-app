@@ -17,13 +17,13 @@ const TABS = [
 
 export default function BottomNav({ variant = "light" }) {
   const pathname = usePathname();
-  const [profileAvatar, setProfileAvatar] = useState("👤");
-  const [isDesktop, setIsDesktop] = useState(false);
+  const [profileAvatar] = useState(() => getAvatar());
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.innerWidth >= 1024
+  );
 
   useEffect(() => {
-    setProfileAvatar(getAvatar());
     const check = () => setIsDesktop(window.innerWidth >= 1024);
-    check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);

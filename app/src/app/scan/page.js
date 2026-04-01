@@ -48,9 +48,39 @@ export default function ScanPage() {
 
   // Initialize camera on mount
   useEffect(() => {
-    startCamera();
+    let cancelled = false;
+
+    async function initializeCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } },
+          audio: false,
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          setCameraReady(true);
+        }
+      } catch (err) {
+        if (cancelled) {
+          return;
+        }
+        console.error("Camera access denied:", err);
+        setErrorMsg("Camera access is needed to scan artwork. Please allow camera permissions and try again.");
+        setPhase("error");
+      }
+    }
+
+    void initializeCamera();
 
     return () => {
+      cancelled = true;
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }

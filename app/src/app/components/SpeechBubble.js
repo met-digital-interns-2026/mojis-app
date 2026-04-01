@@ -1,32 +1,41 @@
-// Speech bubble comment component — used on the homepage.
-// Shows a user's comment with their emoji, like button, and nested replies.
+// Speech bubble comment component used by both the homepage and detail page.
+// All comment data is expected to come from the database; this component only
+// handles presentation plus local UI affordances like collapsing replies.
 "use client";
 
 import { useState } from "react";
 
-export default function SpeechBubble({ comment, color, delay = 0, onReply, onLike, depth = 0 }) {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(comment.likes || 0);
+export default function SpeechBubble({
+  comment,
+  color,
+  delay = 0,
+  onReply,
+  onToggleLike,
+  likedCommentIds,
+  depth = 0,
+  actionsDisabled = false,
+}) {
   const [showReplies, setShowReplies] = useState(false);
 
   const handleLike = (e) => {
     e.stopPropagation();
-    if (!liked) {
-      setLiked(true);
-      setLikeCount(likeCount + 1);
-    } else {
-      setLiked(false);
-      setLikeCount(likeCount - 1);
+    if (actionsDisabled || !comment.id || !onToggleLike) {
+      return;
     }
-    if (onLike) onLike(comment);
+    onToggleLike(comment);
   };
 
   const handleReply = (e) => {
     e.stopPropagation();
+    if (actionsDisabled) {
+      return;
+    }
     if (onReply) onReply(comment);
   };
 
   const hasReplies = comment.replies && comment.replies.length > 0;
+  const liked = comment.id != null && likedCommentIds?.has(comment.id);
+  const likeCount = comment.likes || 0;
 
   return (
     <div style={{
@@ -97,10 +106,11 @@ export default function SpeechBubble({ comment, color, delay = 0, onReply, onLik
           }}>
             <button
               onClick={handleLike}
+              disabled={actionsDisabled || !comment.id || !onToggleLike}
               style={{
                 background: "none",
                 border: "none",
-                cursor: "pointer",
+                cursor: actionsDisabled || !comment.id || !onToggleLike ? "default" : "pointer",
                 display: "flex",
                 alignItems: "center",
                 gap: 4,
@@ -109,6 +119,7 @@ export default function SpeechBubble({ comment, color, delay = 0, onReply, onLik
                 fontWeight: 600,
                 color: liked ? "#C1476F" : "#A09B94",
                 transition: "all 0.2s ease",
+                opacity: actionsDisabled || !comment.id || !onToggleLike ? 0.6 : 1,
               }}
             >
               <span style={{
@@ -123,10 +134,11 @@ export default function SpeechBubble({ comment, color, delay = 0, onReply, onLik
             {depth === 0 && (
               <button
                 onClick={handleReply}
+                disabled={actionsDisabled || !onReply}
                 style={{
                   background: "none",
                   border: "none",
-                  cursor: "pointer",
+                  cursor: actionsDisabled || !onReply ? "default" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
@@ -135,6 +147,7 @@ export default function SpeechBubble({ comment, color, delay = 0, onReply, onLik
                   fontWeight: 600,
                   color: "#A09B94",
                   transition: "color 0.2s ease",
+                  opacity: actionsDisabled || !onReply ? 0.6 : 1,
                 }}
               >
                 ↩ Reply
@@ -175,7 +188,10 @@ export default function SpeechBubble({ comment, color, delay = 0, onReply, onLik
                 comment={reply}
                 color={color}
                 delay={ri * 0.05}
+                onToggleLike={onToggleLike}
+                likedCommentIds={likedCommentIds}
                 depth={1}
+                actionsDisabled={actionsDisabled}
               />
             ))}
           </div>

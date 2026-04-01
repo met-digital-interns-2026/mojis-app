@@ -1,14 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { getFavorites, saveFavorites } from "../lib/guest";
 
 export default function BookmarkButton({ type, id, size = 32 }) {
-  const [bookmarked, setBookmarked] = useState(false);
-
-  useEffect(() => {
-    setBookmarked(getFavorites().some(f => f.type === type && f.id === id));
-  }, [type, id]);
+  const [bookmarked, setBookmarked] = useState(() =>
+    getFavorites().some((fav) => fav.type === type && fav.id === id)
+  );
 
   function toggle(e) {
     e.preventDefault();

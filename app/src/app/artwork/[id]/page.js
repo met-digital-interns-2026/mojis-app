@@ -5,11 +5,11 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import BottomNav from "../../components/BottomNav";
 import BookmarkButton from "../../components/BookmarkButton";
+import CommentsSection from "../../components/CommentsSection";
 import { EMOJI_CATEGORIES } from "../../data/artworks";
 import { fetchArtwork, fixMetImageUrl } from "../../lib/met-api";
-import { getArtwork, getReactionCounts, getMyReaction, saveReaction, getComments, addComment, upsertArtwork, getArtworkRankings } from "../../lib/db";
-import { getGuestId, getGuestName } from "../../lib/guest";
-import AuthModal from "../../components/AuthModal";
+import { getArtwork, getReactionCounts, getMyReaction, saveReaction, upsertArtwork, getArtworkRankings } from "../../lib/db";
+import { getGuestId } from "../../lib/guest";
 
 // openCategory / onToggle ensure only one picker is open at a time
 function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCategory, onToggle }) {
@@ -88,139 +88,11 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCatego
   );
 }
 
-function CommentBubble({ comment, delay = 0, depth = 0 }) {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(comment.likes || 0);
-  const [showReplies, setShowReplies] = useState(false);
-  const [replyText, setReplyText] = useState("");
-  const [showReplyInput, setShowReplyInput] = useState(false);
-  const [localReplies, setLocalReplies] = useState(comment.replies || []);
-  const hasReplies = localReplies.length > 0;
-
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount(liked ? likeCount - 1 : likeCount + 1);
-  };
-
-  const handleSendReply = () => {
-    if (replyText.trim()) {
-      setLocalReplies([...localReplies, {
-        user: "You", emoji: "💬", text: replyText.trim(),
-        replyTo: comment.user, likes: 0, replies: [],
-      }]);
-      setReplyText("");
-      setShowReplyInput(false);
-      setShowReplies(true);
-    }
-  };
-
-  return (
-    <div style={{ animation: `fadeUp 0.35s ease ${delay}s both`, marginLeft: depth > 0 ? 34 : 0 }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-        <div style={{
-          width: depth > 0 ? 22 : 28, height: depth > 0 ? 22 : 28,
-          borderRadius: "50%", background: "rgba(193,71,111,0.12)",
-          border: "1.5px solid rgba(193,71,111,0.25)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: depth > 0 ? 11 : 14, flexShrink: 0, marginTop: 2,
-        }}>
-          {comment.emoji}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
-            background: depth > 0 ? "rgba(0,0,0,0.03)" : "#FFF",
-            border: `1px solid rgba(0,0,0,${depth > 0 ? "0.05" : "0.07"})`,
-            borderRadius: "4px 14px 14px 14px", padding: "8px 12px",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#2D2A26" }}>{comment.user}</span>
-              {comment.replyTo && (
-                <>
-                  <span style={{ fontSize: 10, color: "rgba(0,0,0,0.2)" }}>→</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: "#C1476F" }}>{comment.replyTo}</span>
-                </>
-              )}
-              <span style={{ fontSize: 10, color: "#A09B94" }}>• just now</span>
-            </div>
-            <div style={{ fontSize: 13, color: "#6B6560", lineHeight: 1.4 }}>
-              {comment.text}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 4px 0" }}>
-            <button onClick={handleLike} style={{
-              background: "none", border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 4, padding: "2px 0",
-              fontSize: 11, fontWeight: 600,
-              color: liked ? "#C1476F" : "#A09B94",
-            }}>
-              <span style={{ fontSize: 13, transition: "transform 0.2s ease", transform: liked ? "scale(1.2)" : "scale(1)" }}>
-                {liked ? "❤️" : "🤍"}
-              </span>
-              {likeCount > 0 && likeCount}
-            </button>
-            {depth === 0 && (
-              <button onClick={() => setShowReplyInput(!showReplyInput)} style={{
-                background: "none", border: "none", cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 4, padding: "2px 0",
-                fontSize: 11, fontWeight: 600, color: "#A09B94",
-              }}>
-                ↩ Reply
-              </button>
-            )}
-          </div>
-
-          {showReplyInput && depth === 0 && (
-            <div style={{ display: "flex", gap: 6, marginTop: 6, animation: "fadeUp 0.2s ease" }}>
-              <input type="text" value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendReply()}
-                placeholder={`Reply to ${comment.user}...`} autoFocus
-                style={{
-                  flex: 1, background: "#F7F5F0",
-                  border: "1.5px solid #E0DDD7", borderRadius: 10,
-                  padding: "7px 10px", fontSize: 12,
-                  color: "#2D2A26", outline: "none",
-                }}
-              />
-              <button onClick={handleSendReply} style={{
-                background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
-                color: "#FFF", border: "none", borderRadius: 10,
-                padding: "7px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer",
-              }}>Send</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {hasReplies && (
-        <>
-          {localReplies.length > 1 && !showReplies && (
-            <button onClick={() => setShowReplies(true)} style={{
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: 11, fontWeight: 600, color: "#C1476F",
-              padding: "4px 0 0 40px",
-            }}>
-              View {localReplies.length} replies ▾
-            </button>
-          )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
-            {(showReplies ? localReplies : localReplies.slice(0, 1)).map((reply, ri) => (
-              <CommentBubble key={ri} comment={reply} delay={ri * 0.05} depth={1} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function ArtDetailPage({ params }) {
   const { id } = use(params);
 
   // Start empty — no hardcoded fallback. Data comes from DB + Met API.
   const [artwork, setArtwork] = useState({ id, title: "", artist: "", year: "" });
-  const [loading, setLoading] = useState(true);
   const [reactionCounts, setReactionCounts] = useState({});
   const [relatedArtworks, setRelatedArtworks] = useState([]);
 
@@ -271,7 +143,6 @@ export default function ArtDetailPage({ params }) {
         setRelatedArtworks(related);
       }
 
-      if (!cancelled) setLoading(false);
     }
     loadArtwork();
     return () => { cancelled = true; };
@@ -279,22 +150,11 @@ export default function ArtDetailPage({ params }) {
 
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [newComment, setNewComment] = useState("");
-  const [showCommentInput, setShowCommentInput] = useState(false);
-  const [showAllComments, setShowAllComments] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const visibleComments = showAllComments ? comments : comments.slice(0, 3);
 
-  // Load comments and the user's existing reaction from DB
+  // Load the user's existing reaction from DB
   useEffect(() => {
     let cancelled = false;
     async function loadDbData() {
-      const dbComments = await getComments(id);
-      if (!cancelled && dbComments) {
-        setComments(dbComments);
-      }
-
       const guestId = getGuestId();
       const myReaction = await getMyReaction(id, guestId);
       if (!cancelled && myReaction) {
@@ -321,55 +181,12 @@ export default function ArtDetailPage({ params }) {
     const counts = await getReactionCounts(id);
     if (counts) setReactionCounts(counts);
   };
-
-  const handleAddComment = async () => {
-    if (newComment.trim()) {
-      const guestId = getGuestId();
-      const guestName = getGuestName();
-      const emoji = selectedReaction?.emoji || "💬";
-      const text = newComment.trim();
-
-      // Ensure artwork is in DB before adding comment
-      if (artwork.title) {
-        await upsertArtwork(artwork);
-      }
-
-      // Optimistic update
-      setComments(prev => [...prev, {
-        user: guestName, emoji, text, likes: 0, replies: [],
-      }]);
-      setNewComment("");
-      setShowCommentInput(false);
-      setShowAllComments(true);
-
-      // Save to DB
-      await addComment(id, guestId, guestName, emoji, text);
-
-      // Refresh from DB to get real IDs
-      const dbComments = await getComments(id);
-      if (dbComments) setComments(dbComments);
-    }
-  };
-
-  async function handleCommentButtonClick() {
-    setShowCommentInput(true);
-  }
-
   return (
     <div className="responsive-page" style={{
       height: "100vh",
       background: "#F7F5F0",
       position: "relative", overflow: "hidden", display: "flex", flexDirection: "column",
     }}>
-      {showAuthModal && (
-        <AuthModal
-          title="Join to comment"
-          subtitle="Create a free account to share your thoughts on this artwork."
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={() => { setShowAuthModal(false); setShowCommentInput(true); }}
-          onGuest={() => { setShowAuthModal(false); setShowCommentInput(true); }}
-        />
-      )}
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -547,61 +364,13 @@ export default function ArtDetailPage({ params }) {
 
         {/* Comments */}
         <div style={{ padding: "24px 20px 0", animation: "fadeUp 0.4s ease 0.25s both" }}>
-          <div style={{
-            display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12,
-          }}>
-            <span style={{
-              fontSize: 12, fontWeight: 600, color: "#8C8580",
-              letterSpacing: "0.06em", textTransform: "uppercase",
-            }}>💬 Comments ({comments.length})</span>
-            {comments.length > 3 && (
-              <button onClick={() => setShowAllComments(!showAllComments)} style={{
-                background: "none", border: "none", fontSize: 11, fontWeight: 600,
-                color: "#C1476F", cursor: "pointer",
-              }}>
-                {showAllComments ? "Show less" : `View all ${comments.length}`}
-              </button>
-            )}
-          </div>
-          {comments.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {visibleComments.map((c, i) => (
-                <CommentBubble key={i} comment={c} delay={0.05 * i} />
-              ))}
-            </div>
-          )}
-
-          {showCommentInput ? (
-            <div style={{ marginTop: 12, animation: "fadeUp 0.2s ease" }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                <input type="text" value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-                  placeholder="Share your thoughts..." autoFocus
-                  style={{
-                    flex: 1, background: "#FFF",
-                    border: "1.5px solid #E0DDD7", borderRadius: 12,
-                    padding: "10px 14px", fontSize: 13,
-                    color: "#2D2A26", outline: "none",
-                  }}
-                />
-                <button onClick={handleAddComment} style={{
-                  background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
-                  color: "#FFF", border: "none", borderRadius: 12,
-                  padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                }}>Send</button>
-              </div>
-            </div>
-          ) : (
-            <button onClick={handleCommentButtonClick} style={{
-              width: "100%", marginTop: 12, padding: "10px 14px",
-              background: "#FFF", border: "1.5px dashed #D9D5CE",
-              borderRadius: 12, fontSize: 12, color: "#A09B94",
-              cursor: "pointer", fontWeight: 500,
-            }}>
-              💬 Add a comment...
-            </button>
-          )}
+          <CommentsSection
+            key={id}
+            artworkId={id}
+            color="#C1476F"
+            initialVisibleCount={3}
+            commentEmoji={selectedReaction?.emoji || "💬"}
+          />
         </div>
 
         {/* Related Artworks — from DB rankings, excluding current */}

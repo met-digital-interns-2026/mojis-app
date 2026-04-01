@@ -1,88 +1,173 @@
-// Comments section for homepage cards.
-// Shows a list of comments with a "View all" toggle and an input to add new ones.
-// Prompts sign-up when the user tries to comment without an account.
+// Shared comments section.
+// Reads and writes comments, replies, and likes through the database helpers only.
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SpeechBubble from "./SpeechBubble";
-import AuthModal from "./AuthModal";
-import { getSession } from "../lib/auth";
+import { addComment, getComments, getMyLikes, toggleLike } from "../lib/db";
+import { getGuestId, getGuestName } from "../lib/guest";
 import { isConnected } from "../lib/supabase";
 
-export default function CommentsSection({ comments, color }) {
+function collectCommentIds(comments) {
+  const ids = [];
+
+  for (const comment of comments) {
+    if (comment.id != null) {
+      ids.push(comment.id);
+    }
+    if (comment.replies?.length) {
+      ids.push(...collectCommentIds(comment.replies));
+    }
+  }
+
+  return ids;
+}
+
+export default function CommentsSection({
+  artworkId,
+  comments = [],
+  color,
+  initialVisibleCount = 2,
+  commentEmoji = "💬",
+}) {
   const [showAll, setShowAll] = useState(false);
   const [newComment, setNewComment] = useState("");
-  const [localComments, setLocalComments] = useState(comments || []);
+  const [storedComments, setStoredComments] = useState(comments);
   const [showInput, setShowInput] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const visibleComments = showAll ? localComments : localComments.slice(0, 2);
+  const [likedCommentIds, setLikedCommentIds] = useState(new Set());
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  const canPersist = isConnected() && Boolean(artworkId);
+  const visibleComments = showAll
+    ? storedComments
+    : storedComments.slice(0, initialVisibleCount);
 
-  const handleAddComment = () => {
-    if (newComment.trim()) {
-      if (replyingTo) {
-        setLocalComments(localComments.map(c => {
-          if (c === replyingTo) {
-            return {
-              ...c,
-              replies: [...(c.replies || []), {
-                user: "You",
-                emoji: "💬",
-                text: newComment.trim(),
-                replyTo: replyingTo.user,
-                likes: 0,
-              }],
-            };
-          }
-          return c;
-        }));
-      } else {
-        setLocalComments([...localComments, {
-          user: "You",
-          emoji: "💬",
-          text: newComment.trim(),
-          likes: 0,
-          replies: [],
-        }]);
-      }
-      setNewComment("");
-      setShowInput(false);
-      setReplyingTo(null);
-      setShowAll(true);
-    }
-  };
+  useEffect(() => {
+    let cancelled = false;
 
-  // Check auth before opening comment input
-  async function handleCommentClick(e) {
-    e.stopPropagation();
-    if (isConnected()) {
-      const session = await getSession();
-      if (!session) {
-        setShowAuthModal(true);
+    async function loadStoredComments() {
+      if (!canPersist) {
         return;
       }
+
+      const dbComments = await getComments(artworkId);
+      if (cancelled || !dbComments) {
+        return;
+      }
+
+      const commentIds = collectCommentIds(dbComments);
+      const myLikes = await getMyLikes(commentIds, getGuestId());
+      if (cancelled) {
+        return;
+      }
+
+      setStoredComments(dbComments);
+      setLikedCommentIds(myLikes);
     }
+
+    loadStoredComments();
+    return () => {
+      cancelled = true;
+    };
+  }, [artworkId, canPersist]);
+
+  async function refreshStoredComments() {
+    if (!canPersist) {
+      return false;
+    }
+
+    const dbComments = await getComments(artworkId);
+    if (!dbComments) {
+      return false;
+    }
+
+    const commentIds = collectCommentIds(dbComments);
+    const myLikes = await getMyLikes(commentIds, getGuestId());
+    setStoredComments(dbComments);
+    setLikedCommentIds(myLikes);
+    return true;
+  }
+
+  function handleCommentClick(e) {
+    e.stopPropagation();
+    if (!canPersist || pending) {
+      return;
+    }
+    setError("");
     setShowInput(true);
   }
 
   const handleReply = (comment) => {
+    if (!canPersist || pending) {
+      return;
+    }
+    setError("");
     setReplyingTo(comment);
     setShowInput(true);
   };
 
+  async function handleAddComment() {
+    const text = newComment.trim();
+    if (!text || !canPersist || pending) {
+      return;
+    }
+
+    setPending(true);
+    setError("");
+
+    const saved = await addComment(
+      artworkId,
+      getGuestId(),
+      getGuestName(),
+      commentEmoji,
+      text,
+      replyingTo?.id ?? null,
+    );
+
+    if (!saved) {
+      setError("Could not save your comment. Try again.");
+      setPending(false);
+      return;
+    }
+
+    const refreshed = await refreshStoredComments();
+    if (!refreshed) {
+      setError("Your comment was saved, but the thread could not be refreshed.");
+    }
+
+    setNewComment("");
+    setShowInput(false);
+    setReplyingTo(null);
+    setShowAll(true);
+    setPending(false);
+  }
+
+  async function handleToggleLike(comment) {
+    if (!canPersist || pending || !comment.id) {
+      return;
+    }
+
+    setPending(true);
+    setError("");
+
+    const result = await toggleLike(comment.id, getGuestId());
+    if (!result) {
+      setError("Could not update that like. Try again.");
+      setPending(false);
+      return;
+    }
+
+    const refreshed = await refreshStoredComments();
+    if (!refreshed) {
+      setError("Your like was saved, but the thread could not be refreshed.");
+    }
+
+    setPending(false);
+  }
+
   return (
     <div style={{ padding: "0 14px 14px", borderTop: "1px solid #F2EFE9" }}>
-      {/* Auth modal */}
-      {showAuthModal && (
-        <AuthModal
-          title="Join to comment"
-          subtitle="Create a free account to share your thoughts on this artwork."
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={() => { setShowAuthModal(false); setShowInput(true); }}
-          onGuest={() => { setShowAuthModal(false); setShowInput(true); }}
-        />
-      )}
-
       {/* Comments header */}
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -92,9 +177,9 @@ export default function CommentsSection({ comments, color }) {
           fontSize: 12, fontWeight: 700, color: "#8C8580",
           letterSpacing: "0.04em", textTransform: "uppercase",
         }}>
-          💬 Comments ({localComments.length})
+          💬 Comments ({storedComments.length})
         </span>
-        {localComments.length > 2 && (
+        {storedComments.length > initialVisibleCount && (
           <button
             onClick={(e) => { e.stopPropagation(); setShowAll(!showAll); }}
             style={{
@@ -102,7 +187,7 @@ export default function CommentsSection({ comments, color }) {
               fontWeight: 600, color: color, cursor: "pointer", padding: 0,
             }}
           >
-            {showAll ? "Show less" : `View all ${localComments.length}`}
+            {showAll ? "Show less" : `View all ${storedComments.length}`}
           </button>
         )}
       </div>
@@ -111,11 +196,30 @@ export default function CommentsSection({ comments, color }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {visibleComments.map((comment, i) => (
           <SpeechBubble
-            key={i} comment={comment} color={color}
-            delay={i * 0.05} onReply={handleReply}
+            key={comment.id ?? i}
+            comment={comment}
+            color={color}
+            delay={i * 0.05}
+            onReply={handleReply}
+            onToggleLike={handleToggleLike}
+            likedCommentIds={likedCommentIds}
+            actionsDisabled={!canPersist || pending}
           />
         ))}
       </div>
+
+      {error && (
+        <div style={{
+          marginTop: 10,
+          fontSize: 12,
+          color: "#C1476F",
+          padding: "8px 10px",
+          background: "rgba(193,71,111,0.07)",
+          borderRadius: 10,
+        }}>
+          {error}
+        </div>
+      )}
 
       {/* Add comment / reply input */}
       {showInput ? (
@@ -146,33 +250,43 @@ export default function CommentsSection({ comments, color }) {
               onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
               placeholder={replyingTo ? `Reply to ${replyingTo.user}...` : "Share your thoughts..."}
               autoFocus
+              disabled={pending}
               style={{
                 flex: 1, border: "1.5px solid #E8E4DD",
                 borderRadius: replyingTo ? "0 0 0 12px" : 12, padding: "8px 12px",
                 fontSize: 13, outline: "none", background: "#FAFAF8", color: "#2D2A26",
+                opacity: pending ? 0.7 : 1,
               }}
             />
             <button
               onClick={handleAddComment}
+              disabled={pending}
               style={{
                 background: color, color: "#FFF", border: "none",
                 borderRadius: replyingTo ? "0 0 12px 0" : 12, padding: "8px 14px",
-                fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+                fontSize: 13, fontWeight: 700,
+                cursor: pending ? "default" : "pointer",
+                whiteSpace: "nowrap",
+                opacity: pending ? 0.7 : 1,
               }}
-            >Send</button>
+            >{pending ? "Saving..." : "Send"}</button>
           </div>
         </div>
       ) : (
         <button
           onClick={handleCommentClick}
+          disabled={!canPersist || pending}
           style={{
             width: "100%", marginTop: 10, padding: "9px 14px",
             background: "#FAFAF8", border: "1.5px dashed #D9D5CE",
             borderRadius: 12, fontSize: 12, color: "#A09B94",
-            cursor: "pointer", fontWeight: 500, transition: "all 0.2s ease",
+            cursor: !canPersist || pending ? "default" : "pointer",
+            fontWeight: 500,
+            transition: "all 0.2s ease",
+            opacity: !canPersist ? 0.7 : 1,
           }}
         >
-          💬 Add a comment...
+          {canPersist ? "💬 Add a comment..." : "💬 Connect Supabase to comment"}
         </button>
       )}
     </div>

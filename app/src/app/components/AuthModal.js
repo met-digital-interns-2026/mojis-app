@@ -31,7 +31,7 @@ export default function AuthModal({
     if (authError) {
       setError(authError.message);
     } else if (mode === "signup") {
-      setDone("Account created! Check your email to confirm, then sign in.");
+      setDone("Account created. Check your email to confirm, then sign in. Existing reactions and comments on this device will remain under your current guest profile for now.");
     } else {
       onSuccess?.(data);
       onClose?.();
@@ -75,8 +75,8 @@ export default function AuthModal({
           </h2>
           <p style={{ fontSize: 14, color: "#8C8580", lineHeight: 1.5 }}>
             {subtitle ?? (mode === "signup"
-              ? "Save your comments and reactions across visits."
-              : "Sign in to continue where you left off.")}
+              ? "Create an optional login for this device. Existing reactions and comments stay attached to your guest profile for now."
+              : "Sign in to reuse your saved login on this device. Guest reactions and comments are not migrated yet.")}
           </p>
         </div>
 

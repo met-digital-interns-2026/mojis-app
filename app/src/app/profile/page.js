@@ -162,20 +162,37 @@ export default function ProfilePage() {
   const [allArtworks, setAllArtworks] = useState([]);
 
   useEffect(() => {
-    setGuestId(getGuestId());
-    setUsernameState(getGuestName());
-    setAvatarState(getAvatar());
-    setBioState(getBio());
-    setFavoritesState(getFavorites());
-    setLoaded(true);
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      setGuestId(getGuestId());
+      setUsernameState(getGuestName());
+      setAvatarState(getAvatar());
+      setBioState(getBio());
+      setFavoritesState(getFavorites());
+      setLoaded(true);
+    }, 0);
     // Load auth session
-    getSession().then(setSession);
-    const unsubscribe = onAuthChange(setSession);
-    // Load artworks from DB for favorites/avatar pickers
-    getArtworkRankings(20).then(arts => {
-      if (arts) setAllArtworks(arts);
+    getSession().then((nextSession) => {
+      if (!cancelled) {
+        setSession(nextSession);
+      }
     });
-    return unsubscribe;
+    const unsubscribe = onAuthChange((nextSession) => {
+      if (!cancelled) {
+        setSession(nextSession);
+      }
+    });
+    // Load artworks from DB for favorites/avatar pickers
+    getArtworkRankings(20).then((arts) => {
+      if (!cancelled && arts) setAllArtworks(arts);
+    });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+      unsubscribe();
+    };
   }, []);
 
   function startEditing() {
@@ -402,13 +419,13 @@ export default function ProfilePage() {
           </div>
           {!isConnected() ? (
             <p style={{ fontSize: 13, color: "#A09B94", fontStyle: "italic" }}>
-              Connect Supabase to enable accounts. Add credentials to .env.local.
+              Connect Supabase to enable optional sign-in. Reactions and comments still stay tied to this device for now.
             </p>
           ) : session ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: "#2D2A26" }}>{session.user.email}</div>
-                <div style={{ fontSize: 11, color: "#A09B94", marginTop: 2 }}>Signed in</div>
+                <div style={{ fontSize: 11, color: "#A09B94", marginTop: 2 }}>Signed in on this device</div>
               </div>
               <button
                 onClick={async () => { await signOut(); setSession(null); }}
@@ -419,7 +436,11 @@ export default function ProfilePage() {
               >Sign out</button>
             </div>
           ) : (
-            <div style={{ display: "flex", gap: 8 }}>
+            <div>
+              <p style={{ fontSize: 13, color: "#8C8580", lineHeight: 1.5, marginBottom: 12 }}>
+                Sign in is optional. It lets you reuse this email login later, but current reactions and comments remain attached to your guest profile on this device.
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={() => { setAuthModalMode("signup"); setShowAuthModal(true); }}
                 style={{
@@ -437,6 +458,7 @@ export default function ProfilePage() {
                   fontSize: 13, fontWeight: 600, color: "#2D2A26", cursor: "pointer",
                 }}
               >Sign In</button>
+              </div>
             </div>
           )}
         </div>
