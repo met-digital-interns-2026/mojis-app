@@ -13,6 +13,7 @@
  * @param {File|Blob} imageFile - JPEG, PNG, or WebP image (max 8 MB)
  * @param {object} [options]
  * @param {string} [options.embeddingModel] - "image-jina-clip-v2" or "image-gemini-2" (default)
+ * @param {boolean} [options.onView=true] - Restrict matches to artworks currently on view
  * @returns {Promise<Array>} Top matching artworks, each with score + metadata
  */
 export async function searchByImage(imageFile, options = {}) {
@@ -21,6 +22,10 @@ export async function searchByImage(imageFile, options = {}) {
 
   if (options.embeddingModel) {
     formData.append("embeddingModel", options.embeddingModel);
+  }
+
+  if (options.onView !== false) {
+    formData.append("onView", "true");
   }
 
   // Call our own server-side proxy (keeps the bypass secret off the client)

@@ -17,6 +17,7 @@ export async function POST(request) {
   const incomingForm = await request.formData();
   const imageFile = incomingForm.get("image");
   const embeddingModel = incomingForm.get("embeddingModel");
+  const onView = incomingForm.get("onView");
 
   if (!imageFile) {
     return Response.json({ error: "No image provided" }, { status: 400 });
@@ -30,6 +31,9 @@ export async function POST(request) {
   upstreamForm.append("image", new Blob([imageBytes], { type: imageFile.type }), imageFile.name || "scan.jpg");
   if (embeddingModel) {
     upstreamForm.append("embeddingModel", embeddingModel);
+  }
+  if (onView === "true") {
+    upstreamForm.append("onView", "true");
   }
 
   const headers = {};

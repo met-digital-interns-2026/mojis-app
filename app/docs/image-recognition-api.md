@@ -29,6 +29,7 @@ Accepts `multipart/form-data` with these fields:
 |----------------|--------|----------|----------------------------------------------------------------|
 | image          | File   | Yes      | JPEG, PNG, or WebP. Max 8 MB.                                 |
 | embeddingModel | string | No       | `"image-jina-clip-v2"` or `"image-gemini-2"` (default).       |
+| onView         | string | No       | Set to `"true"` to restrict matches to artworks currently on view. |
 
 **Do not set `Content-Type` manually** — the browser/runtime sets the multipart boundary automatically.
 
@@ -69,6 +70,8 @@ Accepts `multipart/form-data` with these fields:
 
 Returns up to 40 results. `_score` ranges from 0 to 1, with higher being more similar. The `_source` contains the full object document (minus embeddings).
 
+The app now always sends `onView=true` for scan requests, because visitors are scanning works in the galleries and we want to prefer only objects currently on display.
+
 ### Key `_source` fields
 
 | Field              | Type            | Notes                                               |
@@ -108,12 +111,14 @@ This secret is stored as the `IMAGE_SEARCH_BYPASS_SECRET` environment variable (
 # Basic search
 curl -X POST https://staging-and-preview-web-git-semantic-search-the-met.vercel.app/api/search/image-similarity \
   -H "x-vercel-protection-bypass: <BYPASS_SECRET>" \
-  -F "image=@./my-painting.jpg"
+  -F "image=@./my-painting.jpg" \
+  -F "onView=true"
 
 # With a specific embedding model
 curl -X POST https://staging-and-preview-web-git-semantic-search-the-met.vercel.app/api/search/image-similarity \
   -H "x-vercel-protection-bypass: <BYPASS_SECRET>" \
   -F "image=@./my-painting.jpg" \
+  -F "onView=true" \
   -F "embeddingModel=image-jina-clip-v2"
 ```
 
