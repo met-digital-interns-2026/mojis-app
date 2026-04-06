@@ -12,6 +12,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Prevent iOS Safari from zooming focused text controls with sub-16px text. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 /* ── Responsive page container ─────────────────────────────────────────── */
 /* Replaces inline maxWidth: 420 on every page. Add className="responsive-page"
    to the outermost div and remove maxWidth from inline styles.             */

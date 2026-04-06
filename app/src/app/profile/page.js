@@ -389,7 +389,7 @@ export default function ProfilePage() {
                 placeholder="Tell other museum visitors a little about yourself…"
                 rows={3}
                 style={{
-                  width: "100%", fontSize: 15, color: "#2D2A26", background: "#F7F5F0",
+                  width: "100%", fontSize: 16, color: "#2D2A26", background: "#F7F5F0",
                   border: "1.5px solid rgba(0,0,0,0.12)", borderRadius: 12,
                   padding: "10px 14px", fontFamily: "inherit", resize: "none", lineHeight: 1.5,
                 }}

@@ -100,7 +100,7 @@ export default function AuthModal({
               style={{
                 background: "#F7F5F0", border: "1.5px solid rgba(0,0,0,0.10)",
                 borderRadius: 14, padding: "13px 16px",
-                fontSize: 15, color: "#2D2A26", outline: "none", fontFamily: "inherit",
+                fontSize: 16, color: "#2D2A26", outline: "none", fontFamily: "inherit",
               }}
             />
             <input
@@ -112,7 +112,7 @@ export default function AuthModal({
               style={{
                 background: "#F7F5F0", border: "1.5px solid rgba(0,0,0,0.10)",
                 borderRadius: 14, padding: "13px 16px",
-                fontSize: 15, color: "#2D2A26", outline: "none", fontFamily: "inherit",
+                fontSize: 16, color: "#2D2A26", outline: "none", fontFamily: "inherit",
               }}
             />
             {error && (

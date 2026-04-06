@@ -89,6 +89,7 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCatego
 
 export default function ArtDetailPage({ params }) {
   const { id } = use(params);
+  const metObjectUrl = `https://www.metmuseum.org/art/collection/search/${encodeURIComponent(id)}`;
 
   // Start empty — no hardcoded fallback. Data comes from DB + Met API.
   const [artwork, setArtwork] = useState({ id, title: "", artist: "", year: "" });
@@ -252,6 +253,28 @@ export default function ArtDetailPage({ params }) {
           <div style={{ fontSize: 15, color: "#6B6560", marginBottom: 4 }}>
             {artwork.artist}, {artwork.year}
           </div>
+          <a
+            href={metObjectUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              marginTop: 10,
+              padding: "8px 12px",
+              borderRadius: 12,
+              background: "#FFF",
+              border: "1px solid rgba(0,0,0,0.08)",
+              color: "#2D2A26",
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: "none",
+            }}
+          >
+            View on The Met
+            <span aria-hidden="true">↗</span>
+          </a>
           {(artwork.gallery || artwork.department) && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
               {artwork.gallery && (

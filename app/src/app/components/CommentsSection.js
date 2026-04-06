@@ -253,7 +253,7 @@ export default function CommentsSection({
               style={{
                 flex: 1, border: "1.5px solid #E8E4DD",
                 borderRadius: replyingTo ? "0 0 0 12px" : 12, padding: "8px 12px",
-                fontSize: 13, outline: "none", background: "#FAFAF8", color: "#2D2A26",
+                fontSize: 16, outline: "none", background: "#FAFAF8", color: "#2D2A26",
                 opacity: pending ? 0.7 : 1,
               }}
             />
