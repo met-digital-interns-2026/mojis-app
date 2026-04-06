@@ -178,7 +178,7 @@ export default function ScanPage() {
 
   return (
     <div className="responsive-page" style={{
-      height: "100vh",
+      height: "100dvh",
       background: "#0A0A0A",
       position: "relative",
       overflow: "hidden",
