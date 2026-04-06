@@ -150,6 +150,7 @@ export default function ArtDetailPage({ params }) {
 
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
+  const [showAbout, setShowAbout] = useState(false);
 
   // Load the user's existing reaction from DB
   useEffect(() => {
@@ -301,21 +302,50 @@ export default function ArtDetailPage({ params }) {
           )}
         </div>
 
-        {/* About This Work */}
+        {/* About This Work — collapsed behind a Learn More button */}
         {(artwork.fact || artwork.description) && (
           <div style={{ padding: "16px 20px 0", animation: "fadeUp 0.4s ease 0.1s both" }}>
-            <div style={{ background: "#FFF", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.07)" }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-                About This Work
-              </div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#2D2A26" }}>{artwork.artist}</div>
-                  <div style={{ fontSize: 12, color: "#8C8580" }}>{artwork.year}</div>
+            {!showAbout ? (
+              <button
+                onClick={() => setShowAbout(true)}
+                style={{
+                  width: "100%", padding: "12px 16px", borderRadius: 16,
+                  background: "#FFF", border: "1px solid rgba(0,0,0,0.07)",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#2D2A26",
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span>📖</span>
+                  <span>Learn more about this work</span>
+                </span>
+                <span style={{ fontSize: 16, color: "#A09B94" }}>▾</span>
+              </button>
+            ) : (
+              <div style={{ background: "#FFF", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.07)", animation: "fadeUp 0.3s ease" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    About This Work
+                  </div>
+                  <button
+                    onClick={() => setShowAbout(false)}
+                    style={{
+                      background: "transparent", border: "none", cursor: "pointer",
+                      fontSize: 12, fontWeight: 600, color: "#A09B94", padding: 4,
+                    }}
+                  >
+                    Hide ▴
+                  </button>
                 </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#2D2A26" }}>{artwork.artist}</div>
+                    <div style={{ fontSize: 12, color: "#8C8580" }}>{artwork.year}</div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact || artwork.description}</p>
               </div>
-              <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact || artwork.description}</p>
-            </div>
+            )}
           </div>
         )}
 
