@@ -7,7 +7,7 @@ import BottomNav from "../../components/BottomNav";
 import BookmarkButton from "../../components/BookmarkButton";
 import CommentsSection from "../../components/CommentsSection";
 import { EMOJI_CATEGORIES } from "../../data/artworks";
-import { fetchArtwork, fixMetImageUrl } from "../../lib/met-api";
+import { fetchArtwork, fetchMetMapUrlForGallery, fixMetImageUrl } from "../../lib/met-api";
 import { getArtwork, getReactionCounts, getMyReaction, saveReaction, upsertArtwork, getArtworkRankings } from "../../lib/db";
 
 // openCategory / onToggle ensure only one picker is open at a time
@@ -95,6 +95,7 @@ export default function ArtDetailPage({ params }) {
   const [artwork, setArtwork] = useState({ id, title: "", artist: "", year: "" });
   const [reactionCounts, setReactionCounts] = useState({});
   const [relatedArtworks, setRelatedArtworks] = useState([]);
+  const [metMapUrl, setMetMapUrl] = useState(null);
 
   // Load artwork data: try DB first, then Met API
   useEffect(() => {
@@ -164,6 +165,25 @@ export default function ArtDetailPage({ params }) {
     loadDbData();
     return () => { cancelled = true; };
   }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMetMapUrl() {
+      if (!artwork.gallery) {
+        setMetMapUrl(null);
+        return;
+      }
+
+      const url = await fetchMetMapUrlForGallery(artwork.gallery);
+      if (!cancelled) {
+        setMetMapUrl(url);
+      }
+    }
+
+    loadMetMapUrl();
+    return () => { cancelled = true; };
+  }, [artwork.gallery]);
 
   const handleEmojiSelect = async (category, level, emoji) => {
     setSelectedReaction({ category, level, emoji });
@@ -254,28 +274,52 @@ export default function ArtDetailPage({ params }) {
           <div style={{ fontSize: 15, color: "#6B6560", marginBottom: 4 }}>
             {artwork.artist}, {artwork.year}
           </div>
-          <a
-            href={metObjectUrl}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              marginTop: 10,
-              padding: "8px 12px",
-              borderRadius: 12,
-              background: "#FFF",
-              border: "1px solid rgba(0,0,0,0.08)",
-              color: "#2D2A26",
-              fontSize: 13,
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            View on The Met
-            <span aria-hidden="true">↗</span>
-          </a>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+            <a
+              href={metObjectUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 12px",
+                borderRadius: 12,
+                background: "#FFF",
+                border: "1px solid rgba(0,0,0,0.08)",
+                color: "#2D2A26",
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              View on The Met
+              <span aria-hidden="true">↗</span>
+            </a>
+            {metMapUrl && (
+              <a
+                href={metMapUrl}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "8px 12px",
+                  borderRadius: 12,
+                  background: "#2D2A26",
+                  border: "1px solid #2D2A26",
+                  color: "#FFF",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                View Map
+                <span aria-hidden="true">↗</span>
+              </a>
+            )}
+          </div>
           {(artwork.gallery || artwork.department) && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
               {artwork.gallery && (
