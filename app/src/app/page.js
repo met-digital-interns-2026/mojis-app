@@ -9,35 +9,15 @@ import TopNav from "./components/TopNav";
 import { getTopByCategory } from "./lib/db";
 import { fixMetImageUrl } from "./lib/met-api";
 
-// Category whose comments have the most total likes — shown as a featured wide card on desktop
-function totalCommentLikes(cat) {
-  return (cat.artwork.comments || []).reduce((s, c) =>
-    s + (c.likes || 0) + (c.replies || []).reduce((rs, r) => rs + (r.likes || 0), 0), 0);
-}
-function getFeaturedIdx(categories) {
-  return categories.reduce(
-    (best, cat, i, arr) => totalCommentLikes(cat) > totalCommentLikes(arr[best]) ? i : best, 0
-  );
-}
-
 function getCommentTime(comment) {
   const time = Date.parse(comment?.createdAt || "");
   return Number.isNaN(time) ? 0 : time;
 }
 
-function getCommentHighlights(comments = [], limit = 1) {
-  const withLikes = comments
-    .filter((comment) => (comment.likes || 0) > 0)
-    .sort((a, b) => (b.likes || 0) - (a.likes || 0) || getCommentTime(b) - getCommentTime(a));
-
-  const source = withLikes.length > 0
-    ? withLikes
-    : [...comments].sort((a, b) => getCommentTime(b) - getCommentTime(a));
-
-  return {
-    comments: source.slice(0, limit),
-    label: withLikes.length > 0 ? "Most Loved Comment" : "Latest Comment",
-  };
+function getLatestComments(comments = [], limit = 1) {
+  return [...comments]
+    .sort((a, b) => getCommentTime(b) - getCommentTime(a))
+    .slice(0, limit);
 }
 
 function CommentPreview({ artworkId, comment, color, label }) {
@@ -118,7 +98,6 @@ export default function HomePage() {
     () => typeof window !== "undefined" && window.innerWidth >= 1024
   );
   const [categories, setCategories] = useState([]);
-  const [featuredIdx, setFeaturedIdx] = useState(0);
 
   // Load category leaders from DB
   useEffect(() => {
@@ -142,7 +121,6 @@ export default function HomePage() {
 
       if (dbCategories.length > 0) {
         setCategories(dbCategories);
-        setFeaturedIdx(getFeaturedIdx(dbCategories));
       }
     }
     loadFromDb();
@@ -253,13 +231,9 @@ export default function HomePage() {
         )}
         <div className="cards-grid" style={{ marginTop: isDesktop ? 24 : 0 }}>
           {categories.map((cat, i) => {
-            const isFeatured = isDesktop && i === featuredIdx;
-            const preview = getCommentHighlights(cat.artwork.comments, 1);
-            const featuredPreviews = getCommentHighlights(cat.artwork.comments, 3);
-            const showCardPreview = !isFeatured && preview.comments.length > 0;
-            const showFeaturedComments = isFeatured && featuredPreviews.comments.length > 0;
+            const previewComments = getLatestComments(cat.artwork.comments, 1);
+            const showCardPreview = previewComments.length > 0;
 
-            // Shared card content (left side for featured, full card otherwise)
             const cardContent = (
               <>
                 {/* Card Header */}
@@ -325,9 +299,9 @@ export default function HomePage() {
                 {showCardPreview && (
                   <CommentPreview
                     artworkId={cat.artwork.id}
-                    comment={preview.comments[0]}
+                    comment={previewComments[0]}
                     color={cat.color}
-                    label={preview.label}
+                    label="Latest Comment"
                   />
                 )}
               </>
@@ -338,7 +312,6 @@ export default function HomePage() {
                 key={i}
                 className="category-card"
                 style={{
-                  gridColumn: isFeatured ? "1 / -1" : undefined,
                   borderRadius: 20,
                   overflow: "hidden",
                   background: "#FFF",
@@ -348,51 +321,7 @@ export default function HomePage() {
                   animationFillMode: "backwards",
                 }}
               >
-                {showFeaturedComments ? (
-                  /* Featured: card content left + most-loved comments right */
-                  <div style={{ display: "flex" }}>
-                    <div style={{ flex: "1 1 0", minWidth: 0 }}>{cardContent}</div>
-                    <div style={{
-                      width: 300, flexShrink: 0,
-                      borderLeft: "1px solid rgba(0,0,0,0.06)",
-                      background: "#FAFAF8",
-                      padding: "20px 18px",
-                      display: "flex", flexDirection: "column", gap: 12,
-                    }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                        💬 {featuredPreviews.label === "Most Loved Comment" ? "Most Loved Comments" : "Latest Comments"}
-                      </div>
-                      {featuredPreviews.comments.map((c, ci) => (
-                        <div key={ci} style={{
-                          padding: "12px 14px", background: "#FFF",
-                          borderRadius: 8, border: "1px solid rgba(0,0,0,0.07)",
-                          boxShadow: "0 1px 6px rgba(0,0,0,0.04)",
-                        }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                            <span style={{ fontSize: 15 }}>{c.emoji}</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: "#2D2A26" }}>{c.user}</span>
-                            {(c.likes || 0) > 0 && (
-                              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#C1476F" }}>
-                                ❤️ {c.likes}
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 13, color: "#6B6560", lineHeight: 1.45 }}>{c.text}</div>
-                        </div>
-                      ))}
-                      <Link href={`/artwork/${cat.artwork.id}`} style={{ textDecoration: "none", marginTop: "auto" }} onClick={e => e.stopPropagation()}>
-                        <div style={{
-                          textAlign: "center", padding: "10px 14px",
-                          background: `${cat.color}10`,
-                          border: `1.5px solid ${cat.color}25`,
-                          borderRadius: 12, fontSize: 12, fontWeight: 600, color: cat.color,
-                        }}>
-                          See all comments →
-                        </div>
-                      </Link>
-                    </div>
-                  </div>
-                ) : cardContent}
+                {cardContent}
               </div>
             );
           })}
