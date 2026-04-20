@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { getFavorites, saveFavorites } from "../lib/guest";
+import { useTranslations } from "../lib/i18n";
 
 export default function BookmarkButton({ type, id, size = 32 }) {
+  const t = useTranslations("bookmark");
   const [bookmarked, setBookmarked] = useState(() =>
     getFavorites().some((fav) => fav.type === type && fav.id === id)
   );
@@ -23,7 +25,7 @@ export default function BookmarkButton({ type, id, size = 32 }) {
   return (
     <button
       onClick={toggle}
-      title={bookmarked ? "Remove from favorites" : "Save to favorites"}
+      title={bookmarked ? t("remove") : t("save")}
       style={{
         width: size,
         height: size,

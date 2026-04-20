@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { signUp, signIn } from "../lib/auth";
+import { useTranslations } from "../lib/i18n";
 
 export default function AuthModal({
   onClose,
@@ -13,6 +14,7 @@ export default function AuthModal({
   subtitle,
   initialMode = "signup",
 }) {
+  const t = useTranslations("auth");
   const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +24,7 @@ export default function AuthModal({
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) { setError("Please fill in all fields."); return; }
+    if (!email.trim() || !password.trim()) { setError(t("fillAllFields")); return; }
     setError("");
     setLoading(true);
     const fn = mode === "signup" ? signUp : signIn;
@@ -31,7 +33,7 @@ export default function AuthModal({
     if (authError) {
       setError(authError.message);
     } else if (mode === "signup") {
-      setDone("Account created. Check your email to confirm, then sign in. Existing reactions and comments on this device will remain under your current guest profile for now.");
+      setDone(t("signupDone"));
     } else {
       onSuccess?.(data);
       onClose?.();
@@ -71,12 +73,10 @@ export default function AuthModal({
         {/* Title */}
         <div style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: "#2D2A26", marginBottom: 6 }}>
-            {title ?? (mode === "signup" ? "Create an account" : "Welcome back")}
+            {title ?? (mode === "signup" ? t("signupTitle") : t("loginTitle"))}
           </h2>
           <p style={{ fontSize: 14, color: "#8C8580", lineHeight: 1.5 }}>
-            {subtitle ?? (mode === "signup"
-              ? "Create an optional login for this device. Existing reactions and comments stay attached to your guest profile for now."
-              : "Sign in to reuse your saved login on this device. Guest reactions and comments are not migrated yet.")}
+            {subtitle ?? (mode === "signup" ? t("signupSubtitle") : t("loginSubtitle"))}
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export default function AuthModal({
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="Email address"
+              placeholder={t("emailPlaceholder")}
               autoFocus
               style={{
                 background: "#F7F5F0", border: "1.5px solid rgba(0,0,0,0.10)",
@@ -108,7 +108,7 @@ export default function AuthModal({
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              placeholder="Password (min 6 characters)"
+              placeholder={t("passwordPlaceholder")}
               style={{
                 background: "#F7F5F0", border: "1.5px solid rgba(0,0,0,0.10)",
                 borderRadius: 14, padding: "13px 16px",
@@ -134,7 +134,7 @@ export default function AuthModal({
                 boxShadow: "0 4px 16px rgba(193,71,111,0.28)", opacity: loading ? 0.7 : 1,
               }}
             >
-              {loading ? "…" : (mode === "signup" ? "Create Account" : "Sign In")}
+              {loading ? t("loading") : (mode === "signup" ? t("createAccount") : t("signIn"))}
             </button>
           </form>
         )}
@@ -142,7 +142,7 @@ export default function AuthModal({
         {/* Toggle mode */}
         {!done && (
           <div style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "#8C8580" }}>
-            {mode === "signup" ? "Already have an account? " : "Don't have an account? "}
+            {mode === "signup" ? t("haveAccount") : t("noAccount")}
             <button
               onClick={() => { setMode(mode === "signup" ? "login" : "signup"); setError(""); }}
               style={{
@@ -150,7 +150,7 @@ export default function AuthModal({
                 color: "#C1476F", cursor: "pointer", padding: 0,
               }}
             >
-              {mode === "signup" ? "Sign in" : "Sign up"}
+              {mode === "signup" ? t("switchToLogin") : t("switchToSignup")}
             </button>
           </div>
         )}
@@ -166,7 +166,7 @@ export default function AuthModal({
               color: "#A09B94", cursor: "pointer",
             }}
           >
-            Continue as guest
+            {t("continueAsGuest")}
           </button>
         )}
       </div>

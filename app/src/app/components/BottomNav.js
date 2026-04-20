@@ -6,16 +6,18 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getAvatar } from "../lib/guest";
+import { useTranslations } from "../lib/i18n";
 
 const TABS = [
-  { icon: "🏠", label: "Home",     id: "home",     href: "/" },
-  { icon: "🗺️", label: "Gallery",  id: "gallery",  href: "/gallery" },
-  { icon: "📸", label: "Scan",     id: "scan",     href: "/scan", special: true },
-  { icon: "🏆", label: "Rankings", id: "rankings", href: "/rankings" },
-  { icon: "👤", label: "Profile",  id: "profile",  href: "/profile" },
+  { icon: "🏠", labelKey: "home",     id: "home",     href: "/" },
+  { icon: "🗺️", labelKey: "gallery",  id: "gallery",  href: "/gallery" },
+  { icon: "📸", labelKey: "scan",     id: "scan",     href: "/scan", special: true },
+  { icon: "🏆", labelKey: "rankings", id: "rankings", href: "/rankings" },
+  { icon: "👤", labelKey: "profile",  id: "profile",  href: "/profile" },
 ];
 
 export default function BottomNav({ variant = "light" }) {
+  const t = useTranslations("nav");
   const pathname = usePathname();
   const [profileAvatar] = useState(() => getAvatar());
   const [isDesktop, setIsDesktop] = useState(
@@ -63,9 +65,9 @@ export default function BottomNav({ variant = "light" }) {
           }}>🏛️</div>
           <div>
             <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, color: "#2D2A26", lineHeight: 1.1 }}>
-              Moji Museum
+              {t("brand")}
             </div>
-            <div style={{ fontSize: 10, color: "#8C8580" }}>The Met</div>
+            <div style={{ fontSize: 10, color: "#8C8580" }}>{t("venue")}</div>
           </div>
         </div>
 
@@ -95,7 +97,7 @@ export default function BottomNav({ variant = "light" }) {
                     transition: "background 0.15s",
                   }}>
                     {icon}
-                    <span style={{ fontSize: 14, fontWeight: 600, color: isActive ? "#FFF" : "#C1476F" }}>{tab.label}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: isActive ? "#FFF" : "#C1476F" }}>{t(tab.labelKey)}</span>
                   </div>
                 </Link>
               );
@@ -111,7 +113,7 @@ export default function BottomNav({ variant = "light" }) {
                 }}>
                   <span style={{ opacity: isActive ? 1 : 0.45 }}>{icon}</span>
                   <span style={{ fontSize: 14, fontWeight: isActive ? 600 : 400, color: isActive ? "#2D2A26" : "#8C8580" }}>
-                    {tab.label}
+                    {t(tab.labelKey)}
                   </span>
                 </div>
               </Link>
@@ -179,7 +181,7 @@ export default function BottomNav({ variant = "light" }) {
             fontWeight: activeTab === tab.id ? 600 : 400,
             color: activeTab === tab.id ? activeTextColor : inactiveTextColor,
             marginTop: tab.special ? -2 : 0,
-          }}>{tab.label}</span>
+          }}>{t(tab.labelKey)}</span>
         </Link>
       ))}
     </div>

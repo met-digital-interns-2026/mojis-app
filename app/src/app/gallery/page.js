@@ -7,8 +7,11 @@ import BottomNav from "../components/BottomNav";
 import TopNav from "../components/TopNav";
 import { getAllArtworks } from "../lib/db";
 import { fixMetImageUrl } from "../lib/met-api";
+import { useTranslations } from "../lib/i18n";
 
 export default function GalleryPage() {
+  const t = useTranslations("gallery");
+
   const [artworks, setArtworks] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [activeDept, setActiveDept] = useState(null);
@@ -45,10 +48,10 @@ export default function GalleryPage() {
       {/* Page title + filters */}
       <div style={{ padding: "8px 24px 0" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>
-          Gallery
+          {t("title")}
         </h1>
         <p style={{ fontSize: 13, color: "#8C8580", marginTop: 4 }}>
-          Artworks discovered by visitors
+          {t("subtitle")}
         </p>
 
         {/* Department filter chips */}
@@ -65,7 +68,7 @@ export default function GalleryPage() {
                 fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
                 flexShrink: 0,
               }}
-            >All</button>
+            >{t("filterAll")}</button>
             {departments.map(dept => (
               <button
                 key={dept}
@@ -87,7 +90,7 @@ export default function GalleryPage() {
       <div style={{ flex: 1, padding: "20px 24px", paddingBottom: "calc(100px + env(safe-area-inset-bottom, 0px))" }}>
         {loading ? (
           <div style={{ textAlign: "center", padding: "60px 0", color: "#A09B94", fontSize: 14 }}>
-            Loading artworks...
+            {t("loading")}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{
@@ -96,12 +99,10 @@ export default function GalleryPage() {
           }}>
             <div style={{ fontSize: 48, marginBottom: 16 }}>🖼️</div>
             <div style={{ fontSize: 16, fontWeight: 600, color: "#2D2A26", marginBottom: 8 }}>
-              {activeDept ? "No artworks in this department yet" : "No artworks discovered yet"}
+              {activeDept ? t("emptyTitleDept") : t("emptyTitleAll")}
             </div>
             <p style={{ fontSize: 13, color: "#8C8580", lineHeight: 1.5 }}>
-              {activeDept
-                ? "Try selecting a different department or scan more artworks."
-                : "Scan an artwork with your phone to add it to the gallery!"}
+              {activeDept ? t("emptyBodyDept") : t("emptyBodyAll")}
             </p>
             {!activeDept && (
               <Link href="/scan" style={{
@@ -111,7 +112,7 @@ export default function GalleryPage() {
                 fontSize: 14, fontWeight: 700, textDecoration: "none",
                 boxShadow: "0 4px 16px rgba(193,71,111,0.3)",
               }}>
-                Scan an Artwork
+                {t("scanCta")}
               </Link>
             )}
           </div>

@@ -9,9 +9,12 @@ import CommentsSection from "../../components/CommentsSection";
 import { EMOJI_CATEGORIES } from "../../data/artworks";
 import { fetchArtwork, fetchMetMapUrlForGallery, fixMetImageUrl } from "../../lib/met-api";
 import { getArtwork, getReactionCounts, getMyReaction, saveReaction, upsertArtwork, getArtworkRankings } from "../../lib/db";
+import { useTranslations } from "../../lib/i18n";
 
 // openCategory / onToggle ensure only one picker is open at a time
 function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCategory, onToggle }) {
+  const t = useTranslations("artwork");
+  const tEmotions = useTranslations("emotions");
   const isSelected = selected?.category === catKey;
   const isOpen = openCategory === catKey;
   const [hoveredLevel, setHoveredLevel] = useState(null);
@@ -42,7 +45,7 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCatego
         }}
       >
         <span style={{ fontSize: 18 }}>{isSelected ? selected.emoji : category.levels[0]}</span>
-        <span>{category.label}</span>
+        <span>{tEmotions(catKey)}</span>
         {isSelected && (
           <span style={{
             fontSize: 9, background: category.color, color: "#FFF",
@@ -80,7 +83,7 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCatego
                     ? "scale(1.08)"
                     : "scale(1)",
               }}
-              title={`Level ${i + 1}`}
+              title={t("levelTooltip", { level: i + 1 })}
             >{emoji}</button>
           ))}
         </div>
@@ -93,23 +96,23 @@ function joinParts(parts) {
   return parts.filter(Boolean).join(", ");
 }
 
-function getArtworkDetailRows(artwork) {
+function getArtworkDetailRows(artwork, tDetail) {
   return [
-    ["Medium", artwork.medium],
-    ["Dimensions", artwork.dimensions],
-    ["Object type", artwork.objectName],
-    ["Classification", artwork.classification],
-    ["Culture", artwork.culture],
-    ["Period", artwork.period],
-    ["Dynasty", artwork.dynasty],
-    ["Reign", artwork.reign],
-    ["Geography", artwork.geography],
-    ["Artist bio", artwork.artistBio],
-    ["Nationality", artwork.artistNationality],
-    ["Artist dates", artwork.artistDates],
-    ["Accession", joinParts([artwork.accessionNumber, artwork.accessionYear])],
-    ["Credit line", artwork.creditLine],
-    ["Repository", artwork.repository],
+    [tDetail("medium"), artwork.medium],
+    [tDetail("dimensions"), artwork.dimensions],
+    [tDetail("objectType"), artwork.objectName],
+    [tDetail("classification"), artwork.classification],
+    [tDetail("culture"), artwork.culture],
+    [tDetail("period"), artwork.period],
+    [tDetail("dynasty"), artwork.dynasty],
+    [tDetail("reign"), artwork.reign],
+    [tDetail("geography"), artwork.geography],
+    [tDetail("artistBio"), artwork.artistBio],
+    [tDetail("nationality"), artwork.artistNationality],
+    [tDetail("artistDates"), artwork.artistDates],
+    [tDetail("accession"), joinParts([artwork.accessionNumber, artwork.accessionYear])],
+    [tDetail("creditLine"), artwork.creditLine],
+    [tDetail("repository"), artwork.repository],
   ].filter(([, value]) => value);
 }
 
@@ -124,6 +127,9 @@ function truncateWords(text, maxWords = DESCRIPTION_PREVIEW_WORDS) {
 }
 
 export default function ArtDetailPage({ params }) {
+  const t = useTranslations("artwork");
+  const tDetail = useTranslations("artwork.detailLabels");
+  const tEmotions = useTranslations("emotions");
   const { id } = use(params);
   const metObjectUrl = `https://www.metmuseum.org/art/collection/search/${encodeURIComponent(id)}`;
 
@@ -188,7 +194,7 @@ export default function ArtDetailPage({ params }) {
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
   const [showMetadata, setShowMetadata] = useState(false);
-  const detailRows = getArtworkDetailRows(artwork);
+  const detailRows = getArtworkDetailRows(artwork, tDetail);
   const descriptionPreview = truncateWords(artwork.fact || artwork.description);
   const hasMetadata = detailRows.length > 0 || artwork.tags?.length > 0;
 
@@ -269,7 +275,7 @@ export default function ArtDetailPage({ params }) {
         <div style={{
           fontSize: 13, fontWeight: 600,
           color: "#8C8580", letterSpacing: "0.06em", textTransform: "uppercase",
-        }}>Artwork Details</div>
+        }}>{t("headerTitle")}</div>
         <BookmarkButton type="artwork" id={artwork.id} size={40} />
       </div>
 
@@ -332,7 +338,7 @@ export default function ArtDetailPage({ params }) {
                 textDecoration: "none",
               }}
             >
-              View on The Met
+              {t("viewOnMet")}
               <span aria-hidden="true">↗</span>
             </a>
             {metMapUrl && (
@@ -354,7 +360,7 @@ export default function ArtDetailPage({ params }) {
                   textDecoration: "none",
                 }}
               >
-                View Map
+                {t("viewMap")}
                 <span aria-hidden="true">↗</span>
               </a>
             )}
@@ -406,7 +412,7 @@ export default function ArtDetailPage({ params }) {
                       fontSize: 12, fontWeight: 700, color: "#8C8580", padding: 4,
                     }}
                   >
-                    {showMetadata ? "Hide details ▴" : "Show details ▾"}
+                    {showMetadata ? t("hideDetails") : t("showDetails")}
                   </button>
                 </div>
                   {showMetadata && (
@@ -458,7 +464,7 @@ export default function ArtDetailPage({ params }) {
             <div style={{
               fontSize: 12, fontWeight: 600, color: "#8C8580",
               letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10,
-            }}>Reactions ({Object.values(reactionCounts).reduce((a, b) => a + b, 0).toLocaleString()})</div>
+            }}>{t("reactionsHeading", { count: Object.values(reactionCounts).reduce((a, b) => a + b, 0).toLocaleString() })}</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {Object.entries(reactionCounts).map(([emoji, count], i) => (
                 <div key={i} style={{
@@ -480,7 +486,7 @@ export default function ArtDetailPage({ params }) {
           <div style={{
             fontSize: 12, fontWeight: 600, color: "#8C8580",
             letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10,
-          }}>How Does This Make You Feel?</div>
+          }}>{t("feelingsHeading")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {Object.entries(EMOJI_CATEGORIES).map(([key, cat]) => (
               <EmojiIntensityPicker
@@ -505,10 +511,10 @@ export default function ArtDetailPage({ params }) {
               <span style={{ fontSize: 28 }}>{selectedReaction.emoji}</span>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: EMOJI_CATEGORIES[selectedReaction.category].color }}>
-                  {EMOJI_CATEGORIES[selectedReaction.category].label} — Level {selectedReaction.level + 1}
+                  {t("selectedSummary", { label: tEmotions(selectedReaction.category), level: selectedReaction.level + 1 })}
                 </div>
                 <div style={{ fontSize: 11, color: "#A09B94" }}>
-                  Tap another category to change your reaction
+                  {t("changeReactionHint")}
                 </div>
               </div>
             </div>
@@ -535,7 +541,7 @@ export default function ArtDetailPage({ params }) {
               <span style={{
                 fontSize: 12, fontWeight: 600, color: "#8C8580",
                 letterSpacing: "0.06em", textTransform: "uppercase",
-              }}>More at The Met</span>
+              }}>{t("moreAtMet")}</span>
             </div>
             <div className="hide-scrollbar" style={{
               display: "flex", gap: 10, overflowX: "auto", padding: "0 20px 4px",
@@ -575,7 +581,7 @@ export default function ArtDetailPage({ params }) {
                         <span style={{ fontSize: 10, fontWeight: 600, color: "#8C8580" }}>
                           {art.reactions >= 1000 ? `${(art.reactions / 1000).toFixed(1)}k` : art.reactions}
                         </span>
-                        <span style={{ fontSize: 10, color: "#A09B94", marginLeft: 2 }}>reactions</span>
+                        <span style={{ fontSize: 10, color: "#A09B94", marginLeft: 2 }}>{t("reactionsLabel")}</span>
                       </div>
                     </div>
                   </div>

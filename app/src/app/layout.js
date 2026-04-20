@@ -1,9 +1,13 @@
 import "./globals.css";
+import { getLocale, useTranslations } from "./lib/i18n";
 
-export const metadata = {
-  title: "Moji Museum",
-  description: "React to art with emojis at The Met",
-};
+export function generateMetadata() {
+  const t = useTranslations("metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
 export const viewport = {
   viewportFit: "cover",
@@ -11,7 +15,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang={getLocale()} className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>
   );

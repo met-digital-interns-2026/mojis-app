@@ -8,6 +8,7 @@ import BookmarkButton from "./components/BookmarkButton";
 import TopNav from "./components/TopNav";
 import { getTopByCategory } from "./lib/db";
 import { fixMetImageUrl } from "./lib/met-api";
+import { useTranslations } from "./lib/i18n";
 
 function getCommentTime(comment) {
   const time = Date.parse(comment?.createdAt || "");
@@ -21,6 +22,7 @@ function getLatestComments(comments = [], limit = 1) {
 }
 
 function CommentPreview({ artworkId, comment, color, label }) {
+  const t = useTranslations("home");
   if (!comment) return null;
 
   return (
@@ -70,7 +72,7 @@ function CommentPreview({ artworkId, comment, color, label }) {
                 </span>
               )}
               <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color }}>
-                View discussion →
+                {t("viewDiscussion")}
               </span>
             </div>
           </div>
@@ -80,19 +82,22 @@ function CommentPreview({ artworkId, comment, color, label }) {
   );
 }
 
-// Map emotion category keys to display info
+// Map emotion category keys to display info (labels come from i18n)
 const CATEGORY_DISPLAY = {
-  sad:        { emoji: "😢", label: "Saddest",       color: "#4A6FA5", bgGrad: "linear-gradient(135deg, #4A6FA5 0%, #2D4A7A 100%)" },
-  love:       { emoji: "❤️", label: "Most Loved",     color: "#C1476F", bgGrad: "linear-gradient(135deg, #C1476F 0%, #8B2252 100%)" },
-  scary:      { emoji: "😱", label: "Most Shocking",   color: "#D4763A", bgGrad: "linear-gradient(135deg, #D4763A 0%, #A04E1B 100%)" },
-  confused:   { emoji: "🤔", label: "Most Puzzling",   color: "#6B7B5E", bgGrad: "linear-gradient(135deg, #6B7B5E 0%, #4A5940 100%)" },
-  mindblowing:{ emoji: "🤯", label: "Mind-blowing",    color: "#00BCD4", bgGrad: "linear-gradient(135deg, #00BCD4 0%, #00838F 100%)" },
-  funny:      { emoji: "😂", label: "Funniest",        color: "#FFD600", bgGrad: "linear-gradient(135deg, #FFD600 0%, #F9A825 100%)" },
-  disgusted:  { emoji: "🤢", label: "Most Disgusting", color: "#7CB342", bgGrad: "linear-gradient(135deg, #7CB342 0%, #558B2F 100%)" },
-  angry:      { emoji: "🔥", label: "Most Heated",     color: "#F44336", bgGrad: "linear-gradient(135deg, #F44336 0%, #C62828 100%)" },
+  sad:        { emoji: "😢", color: "#4A6FA5", bgGrad: "linear-gradient(135deg, #4A6FA5 0%, #2D4A7A 100%)" },
+  love:       { emoji: "❤️", color: "#C1476F", bgGrad: "linear-gradient(135deg, #C1476F 0%, #8B2252 100%)" },
+  scary:      { emoji: "😱", color: "#D4763A", bgGrad: "linear-gradient(135deg, #D4763A 0%, #A04E1B 100%)" },
+  confused:   { emoji: "🤔", color: "#6B7B5E", bgGrad: "linear-gradient(135deg, #6B7B5E 0%, #4A5940 100%)" },
+  mindblowing:{ emoji: "🤯", color: "#00BCD4", bgGrad: "linear-gradient(135deg, #00BCD4 0%, #00838F 100%)" },
+  funny:      { emoji: "😂", color: "#FFD600", bgGrad: "linear-gradient(135deg, #FFD600 0%, #F9A825 100%)" },
+  disgusted:  { emoji: "🤢", color: "#7CB342", bgGrad: "linear-gradient(135deg, #7CB342 0%, #558B2F 100%)" },
+  angry:      { emoji: "🔥", color: "#F44336", bgGrad: "linear-gradient(135deg, #F44336 0%, #C62828 100%)" },
 };
 
 export default function HomePage() {
+  const t = useTranslations("home");
+  const tCats = useTranslations("home.categories");
+
   const [loaded, setLoaded] = useState(false);
   const [isDesktop, setIsDesktop] = useState(
     () => typeof window !== "undefined" && window.innerWidth >= 1024
@@ -105,12 +110,12 @@ export default function HomePage() {
       const dbData = await getTopByCategory();
       if (!dbData || Object.keys(dbData).length === 0) return;
 
-      // Build categories array from DB data
+      // Build categories array from DB data — labels derived at render time
       const dbCategories = Object.entries(dbData)
         .filter(([cat]) => CATEGORY_DISPLAY[cat])
         .map(([cat, data]) => ({
+          key: cat,
           emoji: CATEGORY_DISPLAY[cat].emoji,
-          label: CATEGORY_DISPLAY[cat].label,
           count: data.count,
           color: CATEGORY_DISPLAY[cat].color,
           bgGrad: CATEGORY_DISPLAY[cat].bgGrad,
@@ -192,10 +197,10 @@ export default function HomePage() {
           <TopNav />
           <div style={{ padding: "12px 28px 0" }}>
             <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>
-              Top Reactions
+              {t("title")}
             </h1>
             <p style={{ fontSize: 14, color: "#8C8580", marginTop: 4 }}>
-              Most reacted artworks at The Met this week
+              {t("subtitleDesktop")}
             </p>
           </div>
         </>
@@ -213,11 +218,11 @@ export default function HomePage() {
           }}>
             <div>
               <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 700, color: "#2D2A26", letterSpacing: "-0.01em" }}>
-                Top Reactions
+                {t("title")}
               </h2>
-              <p style={{ fontSize: 13, color: "#8C8580", marginTop: 2 }}>Most reacted artworks this week</p>
+              <p style={{ fontSize: 13, color: "#8C8580", marginTop: 2 }}>{t("subtitleMobile")}</p>
             </div>
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#C1476F", cursor: "pointer" }}>See all →</span>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#C1476F", cursor: "pointer" }}>{t("seeAll")}</span>
           </div>
         )}
 
@@ -225,8 +230,8 @@ export default function HomePage() {
         {categories.length === 0 && loaded && (
           <div style={{ textAlign: "center", padding: "60px 20px", color: "#A09B94" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏛️</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6560" }}>No reactions yet</div>
-            <div style={{ fontSize: 13, marginTop: 4 }}>Scan artworks and share how they make you feel!</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6560" }}>{t("emptyTitle")}</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}>{t("emptyBody")}</div>
           </div>
         )}
         <div className="cards-grid" style={{ marginTop: isDesktop ? 24 : 0 }}>
@@ -245,8 +250,8 @@ export default function HomePage() {
                       fontSize: 22, animation: "float 3s ease infinite", animationDelay: `${i * 0.5}s`,
                     }}>{cat.emoji}</div>
                     <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#2D2A26" }}>{cat.label}</div>
-                      <div style={{ fontSize: 12, color: "#8C8580" }}>{cat.count.toLocaleString()} reactions</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#2D2A26" }}>{tCats(cat.key)}</div>
+                      <div style={{ fontSize: 12, color: "#8C8580" }}>{t("reactionCount", { count: cat.count.toLocaleString() })}</div>
                     </div>
                   </div>
                   <div style={{ padding: "4px 10px", borderRadius: 20, background: "#F2EFE9", fontSize: 11, fontWeight: 500, color: "#6B6560" }}>
@@ -301,7 +306,7 @@ export default function HomePage() {
                     artworkId={cat.artwork.id}
                     comment={previewComments[0]}
                     color={cat.color}
-                    label="Latest Comment"
+                    label={t("latestComment")}
                   />
                 )}
               </>

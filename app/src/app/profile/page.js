@@ -11,6 +11,7 @@ import { isConnected } from "../lib/supabase";
 import { getArtworkRankings } from "../lib/db";
 import { fixMetImageUrl } from "../lib/met-api";
 import AuthModal from "../components/AuthModal";
+import { useTranslations } from "../lib/i18n";
 
 const BIO_LIMIT = 150;
 
@@ -88,12 +89,13 @@ function FavoriteCard({ fav, editing, onRemove, allArtworks }) {
 
 // Picker shown while editing — toggle artworks
 function FavoritesPicker({ favorites, onToggle, allArtworks }) {
+  const t = useTranslations("profile");
   const isSelected = (id) => favorites.some(f => f.type === "artwork" && f.id === id);
 
   if (allArtworks.length === 0) {
     return (
       <div style={{ padding: "16px 0", textAlign: "center", color: "#A09B94", fontSize: 13 }}>
-        No artworks available yet. Scan and react to artworks first!
+        {t("noArtworksYet")}
       </div>
     );
   }
@@ -101,7 +103,7 @@ function FavoritesPicker({ favorites, onToggle, allArtworks }) {
   return (
     <div style={{ animation: "pop 0.2s ease both" }}>
       <p style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-        Artworks
+        {t("artworksHeading")}
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
         {allArtworks.map(art => {
@@ -142,6 +144,7 @@ function FavoritesPicker({ favorites, onToggle, allArtworks }) {
 }
 
 export default function ProfilePage() {
+  const t = useTranslations("profile");
   const [loaded, setLoaded] = useState(false);
   const [guestId, setGuestId] = useState("");
   const [username, setUsernameState] = useState("");
@@ -281,24 +284,24 @@ export default function ProfilePage() {
         padding: "8px 24px 0",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>Profile</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>{t("title")}</h1>
         {!editing ? (
           <button onClick={startEditing} style={{
             background: "none", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 20,
             padding: "6px 16px", fontSize: 13, fontWeight: 600, color: "#2D2A26", cursor: "pointer",
-          }}>Edit</button>
+          }}>{t("edit")}</button>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
             <button onClick={handleCancel} style={{
               background: "none", border: "1.5px solid rgba(0,0,0,0.15)", borderRadius: 20,
               padding: "6px 14px", fontSize: 13, fontWeight: 600, color: "#2D2A26", cursor: "pointer",
-            }}>Cancel</button>
+            }}>{t("cancel")}</button>
             <button onClick={handleSave} style={{
               background: "linear-gradient(135deg, #C1476F 0%, #D4763A 100%)",
               border: "none", borderRadius: 20, padding: "6px 16px",
               fontSize: 13, fontWeight: 600, color: "#FFF", cursor: "pointer",
               boxShadow: "0 2px 10px rgba(193,71,111,0.3)",
-            }}>Save</button>
+            }}>{t("save")}</button>
           </div>
         )}
       </div>
@@ -324,11 +327,11 @@ export default function ProfilePage() {
               animation: "pop 0.2s ease both",
             }}>
               <p style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
-                Choose an artwork
+                {t("chooseArtwork")}
               </p>
               {allArtworks.length === 0 ? (
                 <div style={{ textAlign: "center", color: "#A09B94", fontSize: 12, padding: 8 }}>
-                  No artworks available yet. Scan and react to artworks first!
+                  {t("noArtworksYet")}
                 </div>
               ) : <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
                 {allArtworks.map(art => (
@@ -379,14 +382,14 @@ export default function ProfilePage() {
           boxShadow: "0 2px 16px rgba(0,0,0,0.06)", animationDelay: "0.05s",
         }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "#A09B94", marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Bio
+            {t("bioHeading")}
           </div>
           {editing ? (
             <div>
               <textarea
                 value={draftBio}
                 onChange={e => setDraftBio(e.target.value.slice(0, BIO_LIMIT))}
-                placeholder="Tell other museum visitors a little about yourself…"
+                placeholder={t("bioPlaceholder")}
                 rows={3}
                 style={{
                   width: "100%", fontSize: 16, color: "#2D2A26", background: "#F7F5F0",
@@ -395,7 +398,7 @@ export default function ProfilePage() {
                 }}
               />
               <div style={{ fontSize: 11, color: "#A09B94", textAlign: "right", marginTop: 4 }}>
-                {draftBio.length}/{BIO_LIMIT}
+                {t("bioCounter", { count: draftBio.length, limit: BIO_LIMIT })}
               </div>
             </div>
           ) : (
@@ -404,7 +407,7 @@ export default function ProfilePage() {
               color: bio ? "#2D2A26" : "#C4BDB6",
               fontStyle: bio ? "normal" : "italic",
             }}>
-              {bio || "No bio yet. Tap Edit to add one!"}
+              {bio || t("bioEmpty")}
             </p>
           )}
         </div>
@@ -415,17 +418,17 @@ export default function ProfilePage() {
           boxShadow: "0 2px 16px rgba(0,0,0,0.06)", animationDelay: "0.08s",
         }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "#A09B94", marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
-            Account
+            {t("accountHeading")}
           </div>
           {!isConnected() ? (
             <p style={{ fontSize: 13, color: "#A09B94", fontStyle: "italic" }}>
-              Connect Supabase to enable optional sign-in. Reactions and comments still stay tied to this device for now.
+              {t("connectPrompt")}
             </p>
           ) : session ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: "#2D2A26" }}>{session.user.email}</div>
-                <div style={{ fontSize: 11, color: "#A09B94", marginTop: 2 }}>Signed in on this device</div>
+                <div style={{ fontSize: 11, color: "#A09B94", marginTop: 2 }}>{t("signedInNote")}</div>
               </div>
               <button
                 onClick={async () => { await signOut(); setSession(null); }}
@@ -433,12 +436,12 @@ export default function ProfilePage() {
                   background: "none", border: "1.5px solid rgba(0,0,0,0.12)", borderRadius: 12,
                   padding: "6px 14px", fontSize: 12, fontWeight: 600, color: "#8C8580", cursor: "pointer",
                 }}
-              >Sign out</button>
+              >{t("signOut")}</button>
             </div>
           ) : (
             <div>
               <p style={{ fontSize: 13, color: "#8C8580", lineHeight: 1.5, marginBottom: 12 }}>
-                Sign in is optional. It lets you reuse this email login later, but current reactions and comments remain attached to your guest profile on this device.
+                {t("signInPromptBody")}
               </p>
               <div style={{ display: "flex", gap: 8 }}>
               <button
@@ -449,7 +452,7 @@ export default function ProfilePage() {
                   fontSize: 13, fontWeight: 700, color: "#FFF", cursor: "pointer",
                   boxShadow: "0 3px 12px rgba(193,71,111,0.25)",
                 }}
-              >Create Account</button>
+              >{t("createAccount")}</button>
               <button
                 onClick={() => { setAuthModalMode("login"); setShowAuthModal(true); }}
                 style={{
@@ -457,7 +460,7 @@ export default function ProfilePage() {
                   borderRadius: 14, padding: "11px",
                   fontSize: 13, fontWeight: 600, color: "#2D2A26", cursor: "pointer",
                 }}
-              >Sign In</button>
+              >{t("signIn")}</button>
               </div>
             </div>
           )}
@@ -470,7 +473,7 @@ export default function ProfilePage() {
         }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Favorites
+              {t("favoritesHeading")}
             </div>
             {editing && (
               <button
@@ -482,7 +485,7 @@ export default function ProfilePage() {
                   color: favPickerOpen ? "#C1476F" : "#6B6560", cursor: "pointer",
                 }}
               >
-                {favPickerOpen ? "Done" : "+ Add"}
+                {favPickerOpen ? t("favoritesDone") : t("favoritesAdd")}
               </button>
             )}
           </div>
@@ -505,7 +508,7 @@ export default function ProfilePage() {
               fontSize: 14, color: "#C4BDB6", fontStyle: "italic",
               marginBottom: editing && favPickerOpen ? 16 : 0,
             }}>
-              {editing ? "Pick your favorites below." : "No favorites yet. Tap Edit to add some!"}
+              {editing ? t("favoritesPickPrompt") : t("favoritesEmpty")}
             </p>
           )}
 
@@ -524,7 +527,7 @@ export default function ProfilePage() {
             textAlign: "center", fontSize: 14, color: "#C1476F", fontWeight: 600,
             animation: "fadeUp 0.2s ease both",
           }}>
-            ✓ Profile saved!
+            {t("saved")}
           </div>
         )}
       </div>

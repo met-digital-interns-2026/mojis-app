@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { getAvatar } from "../lib/guest";
+import { useTranslations } from "../lib/i18n";
 
 export default function TopNav() {
+  const t = useTranslations("nav");
   const [avatar] = useState(() => getAvatar());
 
   return (
@@ -25,10 +27,10 @@ export default function TopNav() {
         }}>🏛️</div>
         <div>
           <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#2D2A26", lineHeight: 1.1 }}>
-            Moji Museum
+            {t("brand")}
           </div>
           <div style={{ fontSize: 11, color: "#8C8580", fontWeight: 400, letterSpacing: "0.02em" }}>
-            The Met
+            {t("venue")}
           </div>
         </div>
       </Link>

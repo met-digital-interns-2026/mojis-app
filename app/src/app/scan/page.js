@@ -8,8 +8,11 @@ import Link from "next/link";
 import BottomNav from "../components/BottomNav";
 import { searchByImage } from "../lib/image-search";
 import { upsertArtwork } from "../lib/db";
+import { useTranslations } from "../lib/i18n";
 
 export default function ScanPage() {
+  const t = useTranslations("scan");
+
   // Phase: "camera" → "searching" → "found" | "not-found" | "error"
   const [phase, setPhase] = useState("camera");
   const [results, setResults] = useState([]);
@@ -26,7 +29,7 @@ export default function ScanPage() {
     try {
       // Stop any existing stream first
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -41,10 +44,10 @@ export default function ScanPage() {
       }
     } catch (err) {
       console.error("Camera access denied:", err);
-      setErrorMsg("Camera access is needed to scan artwork. Please allow camera permissions and try again.");
+      setErrorMsg(t("cameraError"));
       setPhase("error");
     }
-  }, []);
+  }, [t]);
 
   // Initialize camera on mount
   useEffect(() => {
@@ -72,7 +75,7 @@ export default function ScanPage() {
           return;
         }
         console.error("Camera access denied:", err);
-        setErrorMsg("Camera access is needed to scan artwork. Please allow camera permissions and try again.");
+        setErrorMsg(t("cameraError"));
         setPhase("error");
       }
     }
@@ -82,10 +85,10 @@ export default function ScanPage() {
     return () => {
       cancelled = true;
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [startCamera]);
+  }, [startCamera, t]);
 
   // Capture a photo from the video feed and search
   const handleCapture = useCallback(async () => {
@@ -126,10 +129,10 @@ export default function ScanPage() {
       }
     } catch (err) {
       console.error("Image search error:", err);
-      setErrorMsg(err.message || "Something went wrong identifying the artwork.");
+      setErrorMsg(err.message || t("searchError"));
       setPhase("error");
     }
-  }, []);
+  }, [t]);
 
   // Also support picking a photo from the gallery
   const handleFileUpload = useCallback(async (e) => {
@@ -159,10 +162,10 @@ export default function ScanPage() {
       }
     } catch (err) {
       console.error("Image search error:", err);
-      setErrorMsg(err.message || "Something went wrong identifying the artwork.");
+      setErrorMsg(err.message || t("searchError"));
       setPhase("error");
     }
-  }, []);
+  }, [t]);
 
   // Reset to camera mode
   const handleScanAgain = useCallback(() => {
@@ -239,11 +242,11 @@ export default function ScanPage() {
           letterSpacing: "0.06em",
           textTransform: "uppercase",
         }}>
-          {phase === "camera" && "Point at artwork"}
-          {phase === "searching" && "Identifying..."}
-          {phase === "found" && "Artwork found"}
-          {phase === "not-found" && "No match found"}
-          {phase === "error" && "Scan error"}
+          {phase === "camera" && t("statusCamera")}
+          {phase === "searching" && t("statusSearching")}
+          {phase === "found" && t("statusFound")}
+          {phase === "not-found" && t("statusNotFound")}
+          {phase === "error" && t("statusError")}
         </div>
         {/* Upload from gallery button */}
         <label style={{
@@ -342,7 +345,7 @@ export default function ScanPage() {
               }}>
                 <span style={{ fontSize: 16 }}>📸</span>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontWeight: 400 }}>
-                  Tap the button to capture artwork
+                  {t("capturePrompt")}
                 </span>
               </div>
             </div>
@@ -387,7 +390,7 @@ export default function ScanPage() {
               animation: "spin 0.8s linear infinite",
             }} />
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em" }}>
-              Starting camera...
+              {t("startingCamera")}
             </div>
           </div>
         )}
@@ -403,7 +406,7 @@ export default function ScanPage() {
               animation: "spin 0.8s linear infinite",
             }} />
             <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", letterSpacing: "0.05em" }}>
-              Matching artwork...
+              {t("matching")}
             </div>
           </div>
         )}
@@ -423,7 +426,7 @@ export default function ScanPage() {
               }}>
                 <span style={{ fontSize: 12 }}>✅</span>
                 <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, fontWeight: 500, color: "#81C784", letterSpacing: "0.04em" }}>
-                  {results.length === 1 ? "MATCH FOUND" : `${results.length} MATCHES FOUND`}
+                  {results.length === 1 ? t("matchOne") : t("matchOther", { count: results.length })}
                 </span>
               </div>
 
@@ -440,7 +443,7 @@ export default function ScanPage() {
                 color: "rgba(255,255,255,0.5)", fontSize: 14, fontWeight: 500,
                 cursor: "pointer",
               }}>
-                📸 Scan Another Artwork
+                {t("scanAnother")}
               </button>
             </div>
           </div>
@@ -460,10 +463,10 @@ export default function ScanPage() {
               }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
                 <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#FFF", marginBottom: 8 }}>
-                  No match found
+                  {t("noMatchTitle")}
                 </h2>
                 <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
-                  Try getting closer to the artwork, or make sure the image is clear and well-lit.
+                  {t("noMatchBody")}
                 </p>
               </div>
 
@@ -473,7 +476,7 @@ export default function ScanPage() {
                 border: "none", color: "#FFF", fontSize: 15, fontWeight: 700,
                 boxShadow: "0 4px 20px rgba(193,71,111,0.35)", cursor: "pointer",
               }}>
-                📸 Try Again
+                {t("tryAgain")}
               </button>
             </div>
           </div>
@@ -493,7 +496,7 @@ export default function ScanPage() {
               }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>⚠️</div>
                 <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#FFF", marginBottom: 8 }}>
-                  Something went wrong
+                  {t("errorTitle")}
                 </h2>
                 <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
                   {errorMsg}
@@ -506,7 +509,7 @@ export default function ScanPage() {
                 border: "none", color: "#FFF", fontSize: 15, fontWeight: 700,
                 boxShadow: "0 4px 20px rgba(193,71,111,0.35)", cursor: "pointer",
               }}>
-                📸 Try Again
+                {t("tryAgain")}
               </button>
             </div>
           </div>

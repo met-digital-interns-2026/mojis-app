@@ -7,6 +7,7 @@ import SpeechBubble from "./SpeechBubble";
 import { addComment, getComments, getMyLikes, toggleLike } from "../lib/db";
 import { getGuestName } from "../lib/guest";
 import { isConnected } from "../lib/supabase";
+import { useTranslations } from "../lib/i18n";
 
 function collectCommentIds(comments) {
   const ids = [];
@@ -30,6 +31,7 @@ export default function CommentsSection({
   initialVisibleCount = 2,
   commentEmoji = "💬",
 }) {
+  const t = useTranslations("comments");
   const [showAll, setShowAll] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [storedComments, setStoredComments] = useState(comments);
@@ -125,14 +127,14 @@ export default function CommentsSection({
     );
 
     if (!saved) {
-      setError("Could not save your comment. Try again.");
+      setError(t("errorSave"));
       setPending(false);
       return;
     }
 
     const refreshed = await refreshStoredComments();
     if (!refreshed) {
-      setError("Your comment was saved, but the thread could not be refreshed.");
+      setError(t("errorRefreshAfterSave"));
     }
 
     setNewComment("");
@@ -152,14 +154,14 @@ export default function CommentsSection({
 
     const result = await toggleLike(comment.id);
     if (!result) {
-      setError("Could not update that like. Try again.");
+      setError(t("errorLike"));
       setPending(false);
       return;
     }
 
     const refreshed = await refreshStoredComments();
     if (!refreshed) {
-      setError("Your like was saved, but the thread could not be refreshed.");
+      setError(t("errorRefreshAfterLike"));
     }
 
     setPending(false);
@@ -176,7 +178,7 @@ export default function CommentsSection({
           fontSize: 12, fontWeight: 700, color: "#8C8580",
           letterSpacing: "0.04em", textTransform: "uppercase",
         }}>
-          💬 Comments ({storedComments.length})
+          {t("heading", { count: storedComments.length })}
         </span>
         {storedComments.length > initialVisibleCount && (
           <button
@@ -186,7 +188,7 @@ export default function CommentsSection({
               fontWeight: 600, color: color, cursor: "pointer", padding: 0,
             }}
           >
-            {showAll ? "Show less" : `View all ${storedComments.length}`}
+            {showAll ? t("showLess") : t("viewAll", { count: storedComments.length })}
           </button>
         )}
       </div>
@@ -230,7 +232,7 @@ export default function CommentsSection({
               borderRadius: "10px 10px 0 0", border: `1.5px solid ${color}25`, borderBottom: "none",
             }}>
               <span style={{ fontSize: 11, color: "#6B6560" }}>
-                ↩ Replying to <strong style={{ color: color }}>{replyingTo.user}</strong>
+                {t("replyingTo")} <strong style={{ color: color }}>{replyingTo.user}</strong>
               </span>
               <button
                 onClick={(e) => { e.stopPropagation(); setReplyingTo(null); }}
@@ -247,7 +249,7 @@ export default function CommentsSection({
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-              placeholder={replyingTo ? `Reply to ${replyingTo.user}...` : "Share your thoughts..."}
+              placeholder={replyingTo ? t("replyPlaceholder", { user: replyingTo.user }) : t("placeholder")}
               autoFocus
               disabled={pending}
               style={{
@@ -268,7 +270,7 @@ export default function CommentsSection({
                 whiteSpace: "nowrap",
                 opacity: pending ? 0.7 : 1,
               }}
-            >{pending ? "Saving..." : "Send"}</button>
+            >{pending ? t("saving") : t("send")}</button>
           </div>
         </div>
       ) : (
@@ -285,7 +287,7 @@ export default function CommentsSection({
             opacity: !canPersist ? 0.7 : 1,
           }}
         >
-          {canPersist ? "💬 Add a comment..." : "💬 Connect Supabase to comment"}
+          {canPersist ? t("addComment") : t("connectToComment")}
         </button>
       )}
     </div>

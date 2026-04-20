@@ -4,6 +4,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "../lib/i18n";
 
 export default function SpeechBubble({
   comment,
@@ -15,6 +16,7 @@ export default function SpeechBubble({
   depth = 0,
   actionsDisabled = false,
 }) {
+  const t = useTranslations("speechBubble");
   const [showReplies, setShowReplies] = useState(false);
 
   const handleLike = (e) => {
@@ -90,7 +92,7 @@ export default function SpeechBubble({
                   </span>
                 </>
               )}
-              <span style={{ fontSize: 10, color: "#A09B94" }}>• just now</span>
+              <span style={{ fontSize: 10, color: "#A09B94" }}>• {t("timeJustNow")}</span>
             </div>
             <div style={{ fontSize: 13, color: "#4A453D", lineHeight: 1.4 }}>
               {comment.text}
@@ -150,7 +152,7 @@ export default function SpeechBubble({
                   opacity: actionsDisabled || !onReply ? 0.6 : 1,
                 }}
               >
-                ↩ Reply
+                {t("reply")}
               </button>
             )}
           </div>
@@ -173,7 +175,7 @@ export default function SpeechBubble({
                 padding: "4px 0 0 44px",
               }}
             >
-              View {comment.replies.length} replies ▾
+              {t("viewReplies", { count: comment.replies.length })}
             </button>
           ) : null}
           <div style={{

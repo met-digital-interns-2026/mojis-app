@@ -8,8 +8,9 @@ import TopNav from "../components/TopNav";
 import BookmarkButton from "../components/BookmarkButton";
 import { getArtworkRankings, getCommentHeartRankings } from "../lib/db";
 import { fixMetImageUrl } from "../lib/met-api";
+import { useTranslations } from "../lib/i18n";
 
-const TABS = ["🔥 Most Reacted", "💬 Most Commented"];
+const TAB_KEYS = ["tabReacted", "tabCommented"];
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const MEDAL_COLORS = ["#F5A623", "#9BA3AF", "#CD7F32"];
@@ -33,6 +34,7 @@ function toRankingItem(art) {
 }
 
 export default function RankingsPage() {
+  const t = useTranslations("rankings");
   const [activeTab, setActiveTab] = useState(0);
   const [reactedData, setReactedData] = useState([]);
   const [commentedData, setCommentedData] = useState([]);
@@ -50,7 +52,7 @@ export default function RankingsPage() {
   }, []);
 
   const data = activeTab === 1 ? commentedData : reactedData;
-  const metricLabel = activeTab === 1 ? "comment hearts" : "reactions";
+  const metricLabel = activeTab === 1 ? t("metricCommentHearts") : t("metricReactions");
   const metricIcon = activeTab === 1 ? "❤️" : null;
   const [top1, top2, top3, ...rest] = data;
 
@@ -70,15 +72,15 @@ export default function RankingsPage() {
       {/* Page title + tabs */}
       <div style={{ padding: "8px 24px 0" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#2D2A26", letterSpacing: -0.5 }}>
-          Rankings
+          {t("title")}
         </h1>
         <p style={{ fontSize: 13, color: "#8C8580", marginTop: 4 }}>
-          Most reacted artworks at The Met
+          {t("subtitle")}
         </p>
 
         {/* Tab pills */}
         <div style={{ display: "flex", gap: 8, marginTop: 16, overflowX: "auto", paddingBottom: 4 }}>
-          {TABS.map((tab, i) => (
+          {TAB_KEYS.map((tabKey, i) => (
             <button
               key={i}
               onClick={() => setActiveTab(i)}
@@ -96,7 +98,7 @@ export default function RankingsPage() {
                 fontFamily: "inherit",
               }}
             >
-              {tab}
+              {t(tabKey)}
             </button>
           ))}
         </div>
@@ -108,8 +110,8 @@ export default function RankingsPage() {
         {data.length === 0 && (
           <div style={{ textAlign: "center", padding: "60px 20px", color: "#A09B94" }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🏛️</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6560" }}>No rankings yet</div>
-            <div style={{ fontSize: 13, marginTop: 4 }}>Scan artworks and react to see them appear here!</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#6B6560" }}>{t("emptyTitle")}</div>
+            <div style={{ fontSize: 13, marginTop: 4 }}>{t("emptyBody")}</div>
           </div>
         )}
 
@@ -168,7 +170,7 @@ export default function RankingsPage() {
                   marginLeft: "auto", padding: "3px 10px", borderRadius: 12,
                   background: "rgba(245,166,35,0.12)", border: "1px solid rgba(245,166,35,0.3)",
                 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#D4890A" }}>⬆ 1st place</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#D4890A" }}>{t("firstPlace")}</span>
                 </div>
               </div>
             </div>
@@ -219,7 +221,7 @@ export default function RankingsPage() {
         {/* ── #4–#10 list ────────────────────────────────────────── */}
         {rest.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 4, animation: "fadeUp 0.4s ease 0.1s both" }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-            Leaderboard
+            {t("leaderboard")}
           </div>
 
           {rest.map((art, i) => {
