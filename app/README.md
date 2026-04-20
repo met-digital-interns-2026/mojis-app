@@ -94,6 +94,7 @@ Create `app/.env.local` with:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+NEXT_PUBLIC_LOCALE=en
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 GUEST_SESSION_SECRET=replace-with-a-long-random-string
 IMAGE_SEARCH_BYPASS_SECRET=your-bypass-secret-here
@@ -103,6 +104,7 @@ Notes:
 - `SUPABASE_SERVICE_ROLE_KEY` must stay server-only
 - `GUEST_SESSION_SECRET` should be long and random
 - `IMAGE_SEARCH_BYPASS_SECRET` is only needed for the scan API proxy
+- `NEXT_PUBLIC_LOCALE` controls the default UI copy; visitors can switch between `en` and `es` in the app
 
 Generate a secret with:
 

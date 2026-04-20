@@ -1,8 +1,8 @@
 import "./globals.css";
-import { getLocale, useTranslations } from "./lib/i18n";
+import { getLocale, getTranslations } from "./lib/i18n-server";
 
 export function generateMetadata() {
-  const t = useTranslations("metadata");
+  const t = getTranslations("metadata");
   return {
     title: t("title"),
     description: t("description"),
