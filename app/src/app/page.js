@@ -320,9 +320,6 @@ export default function HomePage() {
                       </span>
                     </div>
                   ))}
-                  <div style={{ marginLeft: "auto", fontSize: 12, color: "#A09B94", cursor: "pointer", fontWeight: 500 }}>
-                    + React
-                  </div>
                 </div>
 
                 {showCardPreview && (

@@ -14,9 +14,16 @@ import { getArtwork, getReactionCounts, getMyReaction, saveReaction, upsertArtwo
 function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCategory, onToggle }) {
   const isSelected = selected?.category === catKey;
   const isOpen = openCategory === catKey;
+  const [hoveredLevel, setHoveredLevel] = useState(null);
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <div style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: isOpen ? 6 : 0,
+      flexWrap: "wrap",
+      maxWidth: "100%",
+    }}>
       <button
         onClick={() => onToggle(isOpen ? null : catKey)}
         style={{
@@ -48,39 +55,34 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCatego
 
       {isOpen && (
         <div style={{
-          position: "absolute", bottom: "calc(100% + 10px)", left: "50%", transform: "translateX(-50%)",
           background: "rgba(250,248,245,0.98)", backdropFilter: "blur(20px)",
-          borderRadius: 18, padding: "10px 8px",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-          display: "flex", gap: 4, zIndex: 100,
+          borderRadius: 14, padding: "5px 6px",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+          display: "flex", gap: 3,
           border: `1.5px solid ${category.color}40`,
-          animation: "popIn 0.2s cubic-bezier(.4,0,.2,1)",
+          animation: "fadeIn 0.15s ease",
         }}>
-          <div style={{
-            position: "absolute", bottom: -8, left: "50%", transform: "translateX(-50%)",
-            width: 14, height: 14, background: "rgba(250,248,245,0.98)",
-            borderRight: `1.5px solid ${category.color}40`, borderBottom: `1.5px solid ${category.color}40`,
-            rotate: "45deg",
-          }} />
           {category.levels.map((emoji, i) => (
             <button key={i} onClick={() => { onSelect(catKey, i, emoji); onToggle(null); }}
+              onMouseEnter={() => setHoveredLevel(i)}
+              onMouseLeave={() => setHoveredLevel(null)}
+              onFocus={() => setHoveredLevel(i)}
+              onBlur={() => setHoveredLevel(null)}
               style={{
                 background: isSelected && selected.level === i ? `${category.color}20` : "transparent",
                 border: isSelected && selected.level === i ? `2px solid ${category.color}` : "2px solid transparent",
-                borderRadius: 10, padding: "5px 7px", cursor: "pointer",
-                fontSize: 22 + i * 2, transition: "all 0.15s ease",
-                display: "flex", alignItems: "center", justifyContent: "center", minWidth: 36,
+                borderRadius: 10, padding: "4px 6px", cursor: "pointer",
+                fontSize: 20 + i * 2, transition: "transform 0.14s ease, background 0.14s ease, border-color 0.14s ease",
+                display: "flex", alignItems: "center", justifyContent: "center", minWidth: 32,
+                transform: hoveredLevel === i
+                  ? "scale(1.22)"
+                  : isSelected && selected.level === i
+                    ? "scale(1.08)"
+                    : "scale(1)",
               }}
               title={`Level ${i + 1}`}
             >{emoji}</button>
           ))}
-          <div style={{
-            position: "absolute", top: -20, left: "50%", transform: "translateX(-50%)",
-            fontSize: 9, fontWeight: 500,
-            color: category.color, whiteSpace: "nowrap", letterSpacing: 1,
-          }}>
-            MILD → → → INTENSE
-          </div>
         </div>
       )}
     </div>
@@ -109,6 +111,16 @@ function getArtworkDetailRows(artwork) {
     ["Credit line", artwork.creditLine],
     ["Repository", artwork.repository],
   ].filter(([, value]) => value);
+}
+
+const DESCRIPTION_PREVIEW_WORDS = 48;
+
+function truncateWords(text, maxWords = DESCRIPTION_PREVIEW_WORDS) {
+  if (!text) return "";
+
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text;
+  return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
 export default function ArtDetailPage({ params }) {
@@ -175,8 +187,10 @@ export default function ArtDetailPage({ params }) {
 
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
-  const [showAbout, setShowAbout] = useState(false);
+  const [showMetadata, setShowMetadata] = useState(false);
   const detailRows = getArtworkDetailRows(artwork);
+  const descriptionPreview = truncateWords(artwork.fact || artwork.description);
+  const hasMetadata = detailRows.length > 0 || artwork.tags?.length > 0;
 
   // Load the user's existing reaction from DB
   useEffect(() => {
@@ -289,7 +303,7 @@ export default function ArtDetailPage({ params }) {
         </div>
 
         {/* Artwork Info */}
-        <div style={{ padding: "0 20px", animation: "fadeUp 0.4s ease" }}>
+        <div style={{ padding: "14px 20px 0", animation: "fadeUp 0.4s ease" }}>
           <h1 style={{
             fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 700,
             color: "#2D2A26", lineHeight: 1.2, marginBottom: 6,
@@ -371,88 +385,70 @@ export default function ArtDetailPage({ params }) {
           )}
         </div>
 
-        {/* About This Work — collapsed behind a Learn More button */}
-        {(artwork.fact || artwork.description || detailRows.length > 0 || artwork.tags?.length > 0) && (
+        {/* Description and optional object metadata */}
+        {(descriptionPreview || hasMetadata) && (
           <div style={{ padding: "16px 20px 0", animation: "fadeUp 0.4s ease 0.1s both" }}>
-            {!showAbout ? (
-              <button
-                onClick={() => setShowAbout(true)}
-                style={{
-                  width: "100%", padding: "12px 16px", borderRadius: 16,
-                  background: "#FFF", border: "1px solid rgba(0,0,0,0.07)",
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#2D2A26",
-                }}
-              >
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span>📖</span>
-                  <span>Learn more about this work</span>
-                </span>
-                <span style={{ fontSize: 16, color: "#A09B94" }}>▾</span>
-              </button>
-            ) : (
-              <div style={{ background: "#FFF", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.07)", animation: "fadeUp 0.3s ease" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    About This Work
-                  </div>
+            <div style={{ background: "#FFF", borderRadius: 16, padding: "14px 16px", border: "1px solid rgba(0,0,0,0.07)" }}>
+              {descriptionPreview && (
+                <p style={{ fontSize: 14, color: "#5F5953", lineHeight: 1.65 }}>{descriptionPreview}</p>
+              )}
+              {hasMetadata && (
+                <>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginTop: descriptionPreview ? 10 : 0,
+                  }}>
                   <button
-                    onClick={() => setShowAbout(false)}
+                    onClick={() => setShowMetadata(!showMetadata)}
                     style={{
                       background: "transparent", border: "none", cursor: "pointer",
-                      fontSize: 12, fontWeight: 600, color: "#A09B94", padding: 4,
+                      fontSize: 12, fontWeight: 700, color: "#8C8580", padding: 4,
                     }}
                   >
-                    Hide ▴
+                    {showMetadata ? "Hide details ▴" : "Show details ▾"}
                   </button>
                 </div>
-                <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#2D2A26" }}>{artwork.artist}</div>
-                    <div style={{ fontSize: 12, color: "#8C8580" }}>{artwork.year}</div>
-                  </div>
-                </div>
-                {(artwork.fact || artwork.description) && (
-                  <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact || artwork.description}</p>
-                )}
-                {detailRows.length > 0 && (
-                  <div style={{
-                    marginTop: 14,
-                    borderTop: "1px solid rgba(0,0,0,0.07)",
-                    paddingTop: 12,
-                    display: "grid",
-                    gap: 10,
-                  }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                      Object Details
+                  {showMetadata && (
+                    <div style={{ animation: "fadeUp 0.3s ease" }}>
+                      {detailRows.length > 0 && (
+                        <div style={{
+                          marginTop: 10,
+                          borderTop: "1px solid rgba(0,0,0,0.07)",
+                          paddingTop: 12,
+                          display: "grid",
+                          gap: 10,
+                        }}>
+                          {detailRows.map(([label, value]) => (
+                            <div key={label} style={{ display: "grid", gridTemplateColumns: "96px 1fr", gap: 10 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#8C8580" }}>{label}</div>
+                              <div style={{ fontSize: 13, color: "#4B4742", lineHeight: 1.45 }}>{value}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {artwork.tags?.length > 0 && (
+                        <div style={{ marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {artwork.tags.map((tag) => (
+                            <span key={tag} style={{
+                              padding: "5px 10px",
+                              background: "#F5F3EE",
+                              borderRadius: 8,
+                              border: "1px solid rgba(0,0,0,0.06)",
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: "#6B6560",
+                            }}>
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {detailRows.map(([label, value]) => (
-                      <div key={label} style={{ display: "grid", gridTemplateColumns: "96px 1fr", gap: 10 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#8C8580" }}>{label}</div>
-                        <div style={{ fontSize: 13, color: "#4B4742", lineHeight: 1.45 }}>{value}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {artwork.tags?.length > 0 && (
-                  <div style={{ marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {artwork.tags.map((tag) => (
-                      <span key={tag} style={{
-                        padding: "5px 10px",
-                        background: "#F5F3EE",
-                        borderRadius: 8,
-                        border: "1px solid rgba(0,0,0,0.06)",
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: "#6B6560",
-                      }}>
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
 
