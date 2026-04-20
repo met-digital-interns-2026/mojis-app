@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import BottomNav from "./components/BottomNav";
 import BookmarkButton from "./components/BookmarkButton";
-import CommentsSection from "./components/CommentsSection";
 import TopNav from "./components/TopNav";
 import { getTopByCategory } from "./lib/db";
 import { fixMetImageUrl } from "./lib/met-api";
@@ -18,6 +17,86 @@ function totalCommentLikes(cat) {
 function getFeaturedIdx(categories) {
   return categories.reduce(
     (best, cat, i, arr) => totalCommentLikes(cat) > totalCommentLikes(arr[best]) ? i : best, 0
+  );
+}
+
+function getCommentTime(comment) {
+  const time = Date.parse(comment?.createdAt || "");
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function getCommentHighlights(comments = [], limit = 1) {
+  const withLikes = comments
+    .filter((comment) => (comment.likes || 0) > 0)
+    .sort((a, b) => (b.likes || 0) - (a.likes || 0) || getCommentTime(b) - getCommentTime(a));
+
+  const source = withLikes.length > 0
+    ? withLikes
+    : [...comments].sort((a, b) => getCommentTime(b) - getCommentTime(a));
+
+  return {
+    comments: source.slice(0, limit),
+    label: withLikes.length > 0 ? "Most Loved Comment" : "Latest Comment",
+  };
+}
+
+function CommentPreview({ artworkId, comment, color, label }) {
+  if (!comment) return null;
+
+  return (
+    <Link
+      href={`/artwork/${artworkId}`}
+      style={{ textDecoration: "none" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{
+        margin: "0 14px 14px",
+        padding: "12px 14px",
+        background: "#FAFAF8",
+        borderTop: "1px solid #F2EFE9",
+        borderRadius: 8,
+      }}>
+        <div style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: "#A09B94",
+          textTransform: "uppercase",
+          letterSpacing: 0.5,
+          marginBottom: 7,
+        }}>
+          {label}
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 16, lineHeight: 1.3 }}>{comment.emoji || "💬"}</span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: 13,
+              color: "#4B4742",
+              lineHeight: 1.45,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}>
+              {comment.text}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 7 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#6B6560" }}>
+                {comment.user}
+              </span>
+              {(comment.likes || 0) > 0 && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#C1476F" }}>
+                  ❤️ {comment.likes}
+                </span>
+              )}
+              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 700, color }}>
+                View discussion →
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -35,7 +114,6 @@ const CATEGORY_DISPLAY = {
 
 export default function HomePage() {
   const [loaded, setLoaded] = useState(false);
-  const [expandedCard, setExpandedCard] = useState(null);
   const [isDesktop, setIsDesktop] = useState(
     () => typeof window !== "undefined" && window.innerWidth >= 1024
   );
@@ -112,7 +190,6 @@ export default function HomePage() {
         }
         .category-card {
           transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-          cursor: pointer;
         }
         .category-card:active { transform: scale(0.97); }
         .artwork-img { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -177,9 +254,10 @@ export default function HomePage() {
         <div className="cards-grid" style={{ marginTop: isDesktop ? 24 : 0 }}>
           {categories.map((cat, i) => {
             const isFeatured = isDesktop && i === featuredIdx;
-            const topComments = isFeatured
-              ? [...(cat.artwork.comments || [])].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 3)
-              : [];
+            const preview = getCommentHighlights(cat.artwork.comments, 1);
+            const featuredPreviews = getCommentHighlights(cat.artwork.comments, 3);
+            const showCardPreview = !isFeatured && preview.comments.length > 0;
+            const showFeaturedComments = isFeatured && featuredPreviews.comments.length > 0;
 
             // Shared card content (left side for featured, full card otherwise)
             const cardContent = (
@@ -247,12 +325,12 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Comments */}
-                {cat.artwork.comments?.length > 0 && (
-                  <CommentsSection
+                {showCardPreview && (
+                  <CommentPreview
                     artworkId={cat.artwork.id}
-                    comments={cat.artwork.comments}
+                    comment={preview.comments[0]}
                     color={cat.color}
+                    label={preview.label}
                   />
                 )}
               </>
@@ -262,7 +340,6 @@ export default function HomePage() {
               <div
                 key={i}
                 className="category-card"
-                onClick={() => setExpandedCard(expandedCard === i ? null : i)}
                 style={{
                   gridColumn: isFeatured ? "1 / -1" : undefined,
                   borderRadius: 20,
@@ -274,7 +351,7 @@ export default function HomePage() {
                   animationFillMode: "backwards",
                 }}
               >
-                {isFeatured ? (
+                {showFeaturedComments ? (
                   /* Featured: card content left + most-loved comments right */
                   <div style={{ display: "flex" }}>
                     <div style={{ flex: "1 1 0", minWidth: 0 }}>{cardContent}</div>
@@ -286,20 +363,22 @@ export default function HomePage() {
                       display: "flex", flexDirection: "column", gap: 12,
                     }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                        💬 Most Loved Comments
+                        💬 {featuredPreviews.label === "Most Loved Comment" ? "Most Loved Comments" : "Latest Comments"}
                       </div>
-                      {topComments.map((c, ci) => (
+                      {featuredPreviews.comments.map((c, ci) => (
                         <div key={ci} style={{
                           padding: "12px 14px", background: "#FFF",
-                          borderRadius: 14, border: "1px solid rgba(0,0,0,0.07)",
+                          borderRadius: 8, border: "1px solid rgba(0,0,0,0.07)",
                           boxShadow: "0 1px 6px rgba(0,0,0,0.04)",
                         }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                             <span style={{ fontSize: 15 }}>{c.emoji}</span>
                             <span style={{ fontSize: 12, fontWeight: 700, color: "#2D2A26" }}>{c.user}</span>
-                            <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#C1476F" }}>
-                              ❤️ {c.likes}
-                            </span>
+                            {(c.likes || 0) > 0 && (
+                              <span style={{ marginLeft: "auto", fontSize: 11, fontWeight: 600, color: "#C1476F" }}>
+                                ❤️ {c.likes}
+                              </span>
+                            )}
                           </div>
                           <div style={{ fontSize: 13, color: "#6B6560", lineHeight: 1.45 }}>{c.text}</div>
                         </div>

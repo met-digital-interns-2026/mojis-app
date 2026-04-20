@@ -51,6 +51,25 @@ export async function fetchArtwork(objectId) {
       dimensions: data.dimensions || "",
       gallery: data.GalleryNumber ? `Gallery ${data.GalleryNumber}` : null,
       department: data.department || "",
+      objectName: data.objectName || "",
+      classification: data.classification || "",
+      culture: data.culture || "",
+      period: data.period || "",
+      dynasty: data.dynasty || "",
+      reign: data.reign || "",
+      geography: buildGeography(data),
+      accessionNumber: data.accessionNumber || "",
+      accessionYear: data.accessionYear || "",
+      creditLine: data.creditLine || "",
+      repository: data.repository || "",
+      artistBio: data.artistDisplayBio || "",
+      artistNationality: data.artistNationality || "",
+      artistDates: buildArtistDates(data),
+      tags: Array.isArray(data.tags)
+        ? data.tags.map((tag) => tag.term).filter(Boolean)
+        : [],
+      objectWikidataUrl: data.objectWikidata_URL || "",
+      artistWikidataUrl: data.artistWikidata_URL || "",
       image: data.primaryImageSmall || data.primaryImage || null,
       description: buildDescription(data),
     };
@@ -157,6 +176,35 @@ export async function fetchMetMapUrlForGallery(gallery) {
     features.find((feature) => feature?.categories?.subcategory?.id === "gallery");
 
   return buildMetMapFeatureUrl(galleryFeature, config.bearing);
+}
+
+function compactUnique(parts) {
+  return [...new Set(parts.filter(Boolean).map((part) => String(part).trim()).filter(Boolean))];
+}
+
+function buildGeography(data) {
+  const places = compactUnique([
+    data.locale,
+    data.locus,
+    data.city,
+    data.county,
+    data.state,
+    data.region,
+    data.subregion,
+    data.country,
+    data.river,
+  ]);
+
+  if (!places.length) return data.geographyType || "";
+  return [data.geographyType, places.join(", ")].filter(Boolean).join(": ");
+}
+
+function buildArtistDates(data) {
+  const begin = data.artistBeginDate;
+  const end = data.artistEndDate;
+
+  if (begin && end) return `${begin}-${end}`;
+  return begin || end || "";
 }
 
 // Build a short description from the available metadata.

@@ -87,6 +87,30 @@ function EmojiIntensityPicker({ catKey, category, selected, onSelect, openCatego
   );
 }
 
+function joinParts(parts) {
+  return parts.filter(Boolean).join(", ");
+}
+
+function getArtworkDetailRows(artwork) {
+  return [
+    ["Medium", artwork.medium],
+    ["Dimensions", artwork.dimensions],
+    ["Object type", artwork.objectName],
+    ["Classification", artwork.classification],
+    ["Culture", artwork.culture],
+    ["Period", artwork.period],
+    ["Dynasty", artwork.dynasty],
+    ["Reign", artwork.reign],
+    ["Geography", artwork.geography],
+    ["Artist bio", artwork.artistBio],
+    ["Nationality", artwork.artistNationality],
+    ["Artist dates", artwork.artistDates],
+    ["Accession", joinParts([artwork.accessionNumber, artwork.accessionYear])],
+    ["Credit line", artwork.creditLine],
+    ["Repository", artwork.repository],
+  ].filter(([, value]) => value);
+}
+
 export default function ArtDetailPage({ params }) {
   const { id } = use(params);
   const metObjectUrl = `https://www.metmuseum.org/art/collection/search/${encodeURIComponent(id)}`;
@@ -152,6 +176,7 @@ export default function ArtDetailPage({ params }) {
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [openCategory, setOpenCategory] = useState(null);
   const [showAbout, setShowAbout] = useState(false);
+  const detailRows = getArtworkDetailRows(artwork);
 
   // Load the user's existing reaction from DB
   useEffect(() => {
@@ -347,7 +372,7 @@ export default function ArtDetailPage({ params }) {
         </div>
 
         {/* About This Work — collapsed behind a Learn More button */}
-        {(artwork.fact || artwork.description) && (
+        {(artwork.fact || artwork.description || detailRows.length > 0 || artwork.tags?.length > 0) && (
           <div style={{ padding: "16px 20px 0", animation: "fadeUp 0.4s ease 0.1s both" }}>
             {!showAbout ? (
               <button
@@ -387,7 +412,45 @@ export default function ArtDetailPage({ params }) {
                     <div style={{ fontSize: 12, color: "#8C8580" }}>{artwork.year}</div>
                   </div>
                 </div>
-                <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact || artwork.description}</p>
+                {(artwork.fact || artwork.description) && (
+                  <p style={{ fontSize: 14, color: "#6B6560", lineHeight: 1.65 }}>{artwork.fact || artwork.description}</p>
+                )}
+                {detailRows.length > 0 && (
+                  <div style={{
+                    marginTop: 14,
+                    borderTop: "1px solid rgba(0,0,0,0.07)",
+                    paddingTop: 12,
+                    display: "grid",
+                    gap: 10,
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#A09B94", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      Object Details
+                    </div>
+                    {detailRows.map(([label, value]) => (
+                      <div key={label} style={{ display: "grid", gridTemplateColumns: "96px 1fr", gap: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#8C8580" }}>{label}</div>
+                        <div style={{ fontSize: 13, color: "#4B4742", lineHeight: 1.45 }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {artwork.tags?.length > 0 && (
+                  <div style={{ marginTop: 14, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {artwork.tags.map((tag) => (
+                      <span key={tag} style={{
+                        padding: "5px 10px",
+                        background: "#F5F3EE",
+                        borderRadius: 8,
+                        border: "1px solid rgba(0,0,0,0.06)",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: "#6B6560",
+                      }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
