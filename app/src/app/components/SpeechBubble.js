@@ -69,54 +69,55 @@ export default function SpeechBubble({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             position: "relative",
-            background: depth > 0 ? "#F9F7F4" : "#FFF",
-            border: `1.5px solid ${depth > 0 ? "#EDEAE4" : "#E8E4DD"}`,
-            borderRadius: depth > 0 ? 14 : 18,
-            padding: "10px 14px",
-            boxShadow: "0 1px 4px rgba(45,42,38,0.04)",
+            padding: depth > 0 ? "16px 20px 22px 24px" : "20px 24px 26px 28px",
+            minHeight: depth > 0 ? 60 : 72,
           }}>
-            {/* Speech-cloud tail pointing to avatar */}
-            <div style={{
-              position: "absolute",
-              left: -7,
-              top: 12,
-              width: 0,
-              height: 0,
-              borderTop: "7px solid transparent",
-              borderBottom: "7px solid transparent",
-              borderRight: `7px solid ${depth > 0 ? "#EDEAE4" : "#E8E4DD"}`,
-            }} />
-            <div style={{
-              position: "absolute",
-              left: -5,
-              top: 13,
-              width: 0,
-              height: 0,
-              borderTop: "6px solid transparent",
-              borderBottom: "6px solid transparent",
-              borderRight: `6px solid ${depth > 0 ? "#F9F7F4" : "#FFF"}`,
-            }} />
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              marginBottom: 3,
-            }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#2D2A26" }}>
-                {comment.user}
-              </span>
-              {comment.replyTo && (
-                <>
-                  <span style={{ fontSize: 10, color: "#A09B94" }}>→</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, color: color }}>
-                    {comment.replyTo}
-                  </span>
-                </>
-              )}
-              <span style={{ fontSize: 10, color: "#A09B94" }}>• {t("timeJustNow")}</span>
-            </div>
-            <div style={{ fontSize: 13, color: "#4A453D", lineHeight: 1.4 }}>
-              {comment.text}
+            {/* Puffy cloud background */}
+            <svg
+              viewBox="0 0 200 100"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: 0,
+                filter: "drop-shadow(0 1px 3px rgba(45,42,38,0.06))",
+              }}
+            >
+              <path
+                d="M 35 35 C 35 10 70 10 75 30 C 80 5 115 5 120 30 C 125 10 160 10 165 35 C 190 35 195 65 175 70 C 195 85 165 95 155 80 C 145 95 115 95 110 80 C 100 95 70 95 65 80 C 55 95 25 90 25 70 L 5 95 L 25 65 C 5 60 5 35 35 35 Z"
+                fill={depth > 0 ? "#F9F7F4" : "#FFF"}
+                stroke={depth > 0 ? "#EDEAE4" : "#E8E4DD"}
+                strokeWidth="2"
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginBottom: 3,
+              }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#2D2A26" }}>
+                  {comment.user}
+                </span>
+                {comment.replyTo && (
+                  <>
+                    <span style={{ fontSize: 10, color: "#A09B94" }}>→</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: color }}>
+                      {comment.replyTo}
+                    </span>
+                  </>
+                )}
+                <span style={{ fontSize: 10, color: "#A09B94" }}>• {t("timeJustNow")}</span>
+              </div>
+              <div style={{ fontSize: 13, color: "#4A453D", lineHeight: 1.4 }}>
+                {comment.text}
+              </div>
             </div>
           </div>
 
