@@ -284,22 +284,24 @@ export default function HomePage() {
                 </Link>
 
                 {/* Reaction pills */}
-                <div style={{ padding: "12px 14px", display: "flex", gap: 8, alignItems: "center" }}>
-                  {Object.entries(cat.artwork.reactions).map(([emoji, count], j) => (
-                    <div key={j} className="emoji-pill" style={{
-                      display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
-                      borderRadius: 20,
-                      background: j === 0 ? `${cat.color}15` : "#F5F3EE",
-                      border: j === 0 ? `1.5px solid ${cat.color}30` : "1.5px solid transparent",
-                      cursor: "pointer",
-                    }}>
-                      <span style={{ fontSize: 15 }}>{emoji}</span>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: j === 0 ? cat.color : "#6B6560" }}>
-                        {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <Link href={`/artwork/${cat.artwork.id}`} style={{ textDecoration: "none", display: "block" }}>
+                  <div style={{ padding: "12px 14px", display: "flex", gap: 8, alignItems: "center" }}>
+                    {Object.entries(cat.artwork.reactions).map(([emoji, count], j) => (
+                      <div key={j} className="emoji-pill" style={{
+                        display: "flex", alignItems: "center", gap: 5, padding: "5px 10px",
+                        borderRadius: 20,
+                        background: j === 0 ? `${cat.color}15` : "#F5F3EE",
+                        border: j === 0 ? `1.5px solid ${cat.color}30` : "1.5px solid transparent",
+                        cursor: "pointer",
+                      }}>
+                        <span style={{ fontSize: 15 }}>{emoji}</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: j === 0 ? cat.color : "#6B6560" }}>
+                          {count >= 1000 ? `${(count / 1000).toFixed(1)}k` : count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </Link>
 
                 {showCardPreview && (
                   <CommentPreview
