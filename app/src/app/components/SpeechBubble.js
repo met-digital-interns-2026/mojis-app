@@ -71,10 +71,31 @@ export default function SpeechBubble({
             position: "relative",
             background: depth > 0 ? "#F9F7F4" : "#FFF",
             border: `1.5px solid ${depth > 0 ? "#EDEAE4" : "#E8E4DD"}`,
-            borderRadius: depth > 0 ? "4px 14px 14px 14px" : "4px 16px 16px 16px",
-            padding: "8px 12px",
+            borderRadius: depth > 0 ? 14 : 18,
+            padding: "10px 14px",
             boxShadow: "0 1px 4px rgba(45,42,38,0.04)",
           }}>
+            {/* Speech-cloud tail pointing to avatar */}
+            <div style={{
+              position: "absolute",
+              left: -7,
+              top: 12,
+              width: 0,
+              height: 0,
+              borderTop: "7px solid transparent",
+              borderBottom: "7px solid transparent",
+              borderRight: `7px solid ${depth > 0 ? "#EDEAE4" : "#E8E4DD"}`,
+            }} />
+            <div style={{
+              position: "absolute",
+              left: -5,
+              top: 13,
+              width: 0,
+              height: 0,
+              borderTop: "6px solid transparent",
+              borderBottom: "6px solid transparent",
+              borderRight: `6px solid ${depth > 0 ? "#F9F7F4" : "#FFF"}`,
+            }} />
             <div style={{
               display: "flex",
               alignItems: "center",
